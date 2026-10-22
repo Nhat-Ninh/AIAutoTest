@@ -24,7 +24,11 @@ function chiDoc(ctx: APIRequestContext, env: Env): APIRequestContext {
   });
 }
 
-type Fx = { env: Env; api: APIRequestContext; dangNhapUI: () => Promise<void> };
+/* Thông tin KHÔNG nhạy cảm của phiên đăng nhập API vừa tạo (không chứa token / mật khẩu): công ty đang vào, người dùng, quyền quản lý ca. */
+export type Phien = { comId: number | null; userId: number | null; shiftManagement: boolean | null; tenCongTy: string | null };
+let phienHienTai: Phien = { comId: null, userId: null, shiftManagement: null, tenCongTy: null };
+
+type Fx = { env: Env; api: APIRequestContext; phien: Phien; dangNhapUI: () => Promise<void> };
 
 /* Gốc backend luôn kết thúc bằng "/" để đường dẫn tương đối nối đúng (…/api/ + client/common/introspect). */
 const goiCuoi = (u: string) => (u.endsWith('/') ? u : u + '/');
@@ -83,6 +87,7 @@ export const test = base.extend<Fx>({
       body = body?.data ?? body;
     }
     const token = body[dn.truongToken];
+    phienHienTai = { comId: body.companyId ?? null, userId: body.id ?? null, shiftManagement: body.shiftManagement ?? null, tenCongTy: body.companyName ?? null };
     await tam.dispose();
     expect(token, `Đăng nhập API ${env}: không thấy trường ${dn.truongToken} trong phản hồi`).toBeTruthy();
     const ctx = await playwright.request.newContext({
@@ -93,7 +98,12 @@ export const test = base.extend<Fx>({
     await ctx.dispose();
   },
 
-  dangNhapUI: async ({ page, env }, use) => {
+  /* Dùng trong kịch bản: test('…', async ({ api, phien }) => … phien.comId …). Phụ thuộc `api` để đăng nhập xong trước. */
+  phien: async ({ api }, use) => { void api; await use(phienHienTai); },
+
+  /* Phụ thuộc `phien` (⇒ đã đăng nhập API) để biết TÊN công ty cần vào (theo dangNhap.api.congTy) và chọn đúng công ty đó trên màn hình đăng nhập,
+   * thay vì để mặc định công ty đầu tiên — nhờ vậy kịch bản UI và API làm việc trên CÙNG một công ty. */
+  dangNhapUI: async ({ page, env, phien }, use) => {
     await use(async () => {
       const tk = taiKhoan(env, 'web');
       if (!tk) throw new Error(thieuTaiKhoan(env));
@@ -108,6 +118,13 @@ export const test = base.extend<Fx>({
       for (let i = 0; i < 20 && dangOTrangDangNhap(); i++) {
         await page.waitForTimeout(500);
         if (!(await conOMatKhau()) && await page.locator(ui.nutDangNhap).first().isVisible().catch(() => false)) {
+          const ten = phien.tenCongTy;
+          const oCty = page.locator('#companyId').first();
+          if (ten && await oCty.isVisible().catch(() => false)) {   // ng-select "Chọn công ty": tìm theo tên rồi chọn đúng dòng
+            await oCty.click();
+            await page.locator('#companyId input[type="text"]').first().fill(ten).catch(() => undefined);
+            await page.locator('.ng-dropdown-panel .ng-option', { hasText: ten }).first().click().catch(() => undefined);
+          }
           await page.locator(ui.nutDangNhap).first().click();
           break;
         }

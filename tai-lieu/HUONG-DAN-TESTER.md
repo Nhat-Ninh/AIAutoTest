@@ -1,6 +1,6 @@
 # Kiểm thử một chức năng EasyPOS cùng Claude (hướng dẫn cho tester)
 
-Bạn đưa tệp testcase / mã Jira (`EPB-…`) / tên chức năng. Claude đọc code, viết testcase, viết kịch bản Playwright, chạy trên **dev trước, UAT sau** như người dùng, tra CSDL (chỉ đọc) và viết báo cáo. Hết mỗi bước Claude dừng chờ bạn **Duyệt / Sửa lại / Dừng**.
+Bạn đưa tệp testcase / mã Jira (`EPB-…`) / tên chức năng. Claude đọc code, viết testcase, viết kịch bản Playwright, chạy trên **dev** (UAT nếu bạn muốn) như người dùng, tra CSDL (chỉ đọc) và viết báo cáo. Hết mỗi bước Claude dừng chờ bạn **Duyệt / Sửa lại / Dừng**.
 
 ## 1. Cài lần đầu
 1. Cài VS Code, extension **Claude Code**, **Git**, **Node.js 18+** (LTS), bật **VPN** công ty.
@@ -23,7 +23,7 @@ Cách kiểm: Playwright cả giao diện (chụp ảnh) lẫn API, rồi tra CS
 ```
 - **Gửi tệp:** chuột phải tệp → *Copy as path* → dán đường dẫn vào tin nhắn.
 - **Jira:** gửi mã `EPB-…`; Claude đọc bằng công cụ của bộ kit (cần PAT trong `~/.easypos-tester/jira.properties`; không có thì dán nội dung ticket vào chat).
-- **Dev trước, UAT sau:** kiểm thử chức năng trên `dev`; khi đạt (hoặc dev đã sửa lỗi) nhắn *"chạy lại cùng bộ kịch bản trên uat"*. Lỗi chỉ xảy ra trên dev thì ghi rõ môi trường; trên dev nếu thấy lỗi chập chờn, nhờ Claude chạy lại và phân loại "lỗi môi trường" trước khi báo lỗi phần mềm (dev đang sửa code liên tục).
+- **Dev là mặc định, UAT là tùy chọn của bạn:** kiểm thử chức năng trên `dev`. Khi xong, Claude sẽ **hỏi**: *"Có muốn chạy lại trên UAT (https://uat.easypos.vn) không?"* — chọn **Có** thì Claude chạy lại cùng bộ kịch bản trên UAT; **Không / Để sau** thì kết thúc ở dev. Cần chạy UAT ngay giữa chừng thì nhắn *"chạy lại cùng bộ kịch bản trên uat"*. Muốn dùng UAT bạn phải điền khối `uat` trong `tai-khoan.json` (tài khoản web UAT + CSDL UAT). Lỗi chỉ xảy ra trên dev thì ghi rõ môi trường; trên dev nếu thấy lỗi chập chờn, nhờ Claude chạy lại và phân loại "lỗi môi trường" trước khi báo lỗi phần mềm (dev đang sửa code liên tục).
 - **Làm từng phần nhỏ:** mỗi lần một nhóm chức năng (vd *mở ca*, rồi *tạo đơn*), đừng cả module một lúc.
 - **Chạy song song:** mở nhiều cuộc trò chuyện, mỗi cái một chức năng; hai phiên chạy test cùng lúc nên dùng **công ty test khác nhau**. Ca ảnh hưởng cả công ty (khoá sổ, đóng ca…) chạy riêng.
 - **Hết lượt dùng giữa chừng:** `/login` để đổi tài khoản Claude rồi nhắn *"đọc bao-cao\<thư mục> và làm tiếp từ bước <số>"* — mọi việc đã làm nằm trong các tệp báo cáo.

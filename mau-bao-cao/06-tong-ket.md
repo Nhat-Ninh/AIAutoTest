@@ -21,3 +21,8 @@
 
 ## Cần BA chốt
 - …
+
+## Chạy UAT (tùy chọn — hỏi tester sau khi kiểm thử xong trên dev)
+- Tester chọn: ☐ Có, chạy lại trên UAT · ☐ Không, kết thúc ở dev · ☐ Để sau
+- Nếu **Có**: kết quả ở `04-ket-qua-uat.md`, `05-kiem-du-lieu-uat.md`; tóm tắt: <đạt / không đạt>, khác biệt dev ↔ UAT: <…>
+- Nếu **Không / Để sau**: ghi "UAT: chưa chạy" và các lỗi ở trên ghi "đã xác nhận lại trên UAT: chưa".

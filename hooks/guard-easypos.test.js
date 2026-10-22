@@ -182,6 +182,9 @@ const kiemThat = [
   ['không còn địa chỉ EasyBooks trong cấu hình', !/easybooks|10\.110\.122\.|10\.100\.122\./i.test(JSON.stringify(thatRaw))],
   ['mọi mục khongPhaiProd là tên máy (không phải IP) và không nằm đích danh trong prodChan', that.khongPhaiProd.every(h => !/^\d+(\.\d+){3}$/.test(h) && !that.prodChan.map(x => x.toLowerCase()).includes(h))],
   ['cấu hình có đủ hai môi trường dev (easyposbackoffice) và uat (easyposuat) trên 10.100.110.78', !!(thatRaw && thatRaw.moiTruong && thatRaw.moiTruong.dev && thatRaw.moiTruong.uat && thatRaw.moiTruong.dev.db.database === 'easyposbackoffice' && thatRaw.moiTruong.uat.db.database === 'easyposuat' && thatRaw.moiTruong.dev.db.host === '10.100.110.78' && thatRaw.moiTruong.uat.db.host === '10.100.110.78')],
+  ['uat.easypos.vn (UAT, khongPhaiProd) KHÔNG bị coi là prod', !prod.isProdHost('https://uat.easypos.vn/login', that)],
+  ['app.easypos.vn và api.easypos.vn VẪN là prod', prod.isProdHost('https://app.easypos.vn/', that) && prod.isProdHost('https://api.easypos.vn/', that)],
+  ['x.uat.easypos.vn (tên con của UAT) vẫn là prod — khongPhaiProd chỉ trùng nguyên tên', prod.isProdHost('https://x.uat.easypos.vn/', that)],
   ['không môi trường nào trong moiTruong trỏ vào prod', Object.entries(that.moiTruong).every(([k, e]) => !prod.isProdHost(e.webUrl || '', that) && !prod.isProdHost(e.apiUrl || '', that) && !prod.isProdHost((e.db && e.db.host) || '', that))],
 ];
 for (const [ten, ok] of kiemThat) {

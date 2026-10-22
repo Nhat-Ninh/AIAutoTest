@@ -9,5 +9,7 @@
 | Dựa vào | code / tài liệu / cả hai |
 | Mức độ | nhanh / đầy đủ |
 
+UAT: **tùy chọn** — chỉ chạy khi tester chọn "Có" ở câu hỏi cuối quy trình (sau Bước 6 trên dev).
+
 Ngoài phạm vi: <liệt kê>
 Trạng thái duyệt: ☐ Duyệt

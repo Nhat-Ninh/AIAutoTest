@@ -24,6 +24,9 @@
         "database": "easyposbackoffice"
       },
       "dangNhap": {
+        "api": {
+          "congTy": "9839"
+        },
         "ui": {
           "duongDan": "/login"
         }
@@ -34,9 +37,9 @@
       }
     },
     "uat": {
-      "ten": "UAT EasyPOS (profile prodTest)",
-      "webUrl": "",
-      "apiUrl": "",
+      "ten": "UAT EasyPOS (profile prodTest) — TÙY CHỌN, chỉ chạy khi tester muốn",
+      "webUrl": "https://uat.easypos.vn/",
+      "apiUrl": "https://uat.easypos.vn/api/",
       "headerThem": {},
       "db": {
         "host": "10.100.110.78",
@@ -49,7 +52,7 @@
         }
       },
       "phuTro": {
-        "canXacNhan": "Điền webUrl / apiUrl của UAT (hỏi DevOps). Gợi ý từ cấu hình: gateway cổng 8888, backend cổng 9112, Kafka / CORS 10.100.140.43.",
+        "canXacNhan": "Địa chỉ UAT do người phụ trách xác nhận 22/10/2026: https://uat.easypos.vn/login (application profile prodTest). apiUrl = webUrl + 'api/' (suy theo cách FE gọi API cùng gốc) — kiểm bằng F12 → Network nếu đăng nhập API báo 404. uat.easypos.vn nằm dưới tên miền prod easypos.vn nên phải khai ở khongPhaiProd (đã khai).",
         "mongo": "easypos_async_83 (10.100.110.78:27017) — dbq chưa hỗ trợ MongoDB",
         "csdlKhac": "easyposbackofficenew (report, ecommerce) cùng máy 10.100.110.78"
       }
@@ -67,7 +70,7 @@
       },
       "truongDsCongTy": "companies",
       "truongOrg": "companyId",
-      "congTy": "0105987432-994"
+      "congTy": ""
     },
     "ui": {
       "duongDan": "/login",
@@ -97,7 +100,8 @@
     "10.100.110.82"
   ],
   "khongPhaiProd": [
-    "testtranshub.easypos.vn"
+    "testtranshub.easypos.vn",
+    "uat.easypos.vn"
   ],
   "prodDb": {
     "_ghiChu": "TODO DevOps: máy / tên máy / CSDL / tài khoản CSDL PROD của EasyPOS (config server 10.100.110.16 giữ cấu hình thật). Danh sách này chỉ được NỚI RỘNG. Hiện chỉ có các máy chủ prod đã biết từ application-prod.yml.",

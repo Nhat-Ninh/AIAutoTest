@@ -189,7 +189,7 @@ Bạn sẽ thấy trình duyệt tự mở, gõ, bấm. Mở `e2e\tests\dang-nha
 
 Ảnh chụp nằm ở `e2e\test-results\…\sai-tai-khoan.png` và `…\sau-dang-nhap.png`. **Cách học từ kết quả:** đạt (✅) chưa chắc test đã "hay". TC-FE-003 chỉ kiểm "địa chỉ trang không còn chữ login" — một kiểm tra yếu. Ảnh `sau-dang-nhap.png` cho thấy thật sự đã vào hệ thống, nhưng có **hộp thoại "Hướng dẫn sử dụng"** và một cảnh báo **"Số lượng hóa đơn của quý khách đã hết"** che màn hình. Hai điều rút ra:
 1. Kịch bản thật sau này phải **đóng các hộp thoại chào** trước khi bấm gì khác, nếu không chúng che nút và test trượt vì lý do vô nghĩa (đó là "lỗi kịch bản", không phải lỗi phần mềm).
-2. Công ty đang đăng nhập (`congTy`) đã **hết hạn mức hóa đơn** trên dev ⇒ các chức năng phát hành hóa đơn sẽ không test được bằng công ty này. Chọn công ty test khác (còn số lượng hóa đơn) cho nhóm chức năng hóa đơn, bằng cách đổi `dangNhap.api.congTy`.
+2. Công ty đang đăng nhập (`congTy`) đã **hết hạn mức hóa đơn** trên dev ⇒ các chức năng phát hành hóa đơn sẽ không test được bằng công ty này. Chọn công ty test khác (còn số lượng hóa đơn) cho nhóm chức năng hóa đơn, bằng cách đổi `dangNhap.api.congTy`. **Cập nhật 22/10/2026:** đã đổi sang chi nhánh **"Test luồng hóa đơn"** (id `10230`, tìm bằng `SELECT id, name FROM company WHERE name LIKE N'%luồng hóa đơn%'` qua `dbq.js dev`) — 8/8 bài kiểm môi trường + đăng nhập đạt, nhưng hộp thoại "Số lượng hóa đơn … đã hết" **vẫn hiện** và tài khoản vẫn `shiftManagement = false` ở chi nhánh này. **Sau đó (22/10/2026) đổi sang "Cửa hàng test Imei" (id `9839`)**: đăng nhập đạt nhưng vẫn thiếu quyền mở ca. Tra CSDL cho thấy tài khoản test (`user_id 6731`) thuộc **63 công ty và chưa có `shift_management = true` ở công ty nào**; chỉ vài công ty có nhân viên khác được quyền (vd `8259` 3 người, `9708` 1 người). Muốn test mở/đóng ca phải **bật quyền cho chính tài khoản test** (nhờ chủ công ty / dev) hoặc dùng tài khoản của một nhân viên đã có quyền.
 
 ### D6. Cài hook bảo vệ vào Claude Code
 **Hook là gì, vì sao cần.** Mỗi khi Claude định chạy một lệnh, đọc hoặc ghi một tệp, Claude Code gọi hook trước (`hooks/guard-easypos.js`). Hook xem lệnh đó rồi trả lời một trong ba: **cho chạy**, **hỏi người dùng**, hoặc **chặn**. Nó là "bảo vệ cửa": dù Claude nghĩ sai, lệnh nguy hiểm vẫn không chạy được. Thử không cần cài: `node hooks/guard-easypos.test.js` → 112/112 là hook làm đúng như thiết kế.
@@ -221,6 +221,8 @@ Bạn sẽ thấy trình duyệt tự mở, gõ, bấm. Mở `e2e\tests\dang-nha
 5. **Kiểm tra:** hỏi Claude *"EP_KIT ở đâu, có những luật gì?"* → phải ra `C:/easypos-tester-kit` và danh sách luật. Thử bảo vệ: hỏi *"đọc nội dung tai-khoan.json"* → phải bị chặn.
 6. **Gỡ khi cần:** bấm `GO-CAI-DAT.cmd` (giữ lại `~/.easypos-tester` chứa tài khoản), hoặc khôi phục tệp `.bak-easypos-tester-…`.
 
+**Kết quả cài thật (22/10/2026, cách A):** `settings.json` có hook `guard-easypos.js` (cho Bash, PowerShell, Edit, Write, Read, Grep…) và `session-rules.js` (nạp luật đầu phiên); `env.EP_KIT = C:/easypos-tester-kit`; tệp sao lưu `settings.json.bak-easypos-tester-20261022013118`; hook của công cụ khác (`cbm-*`, `codegraph`) còn nguyên; cài tại chỗ (không có bản chép ở AppData). Thử bảo vệ bằng cách đưa 9 tình huống vào hook: **9/9 đúng** — đọc `tai-khoan.json` ⛔, nối CSDL trực tiếp ⛔, gọi `easypos.vn` ⛔, chạy app profile prod ⛔, đọc `application-prod.yml` ⛔, đọc `application-dev.yml` ❓ hỏi, còn `dbq.js` / Playwright trên dev và đọc tệp kịch bản ✅. Bằng chứng sống: ngay khi cài xong, lúc Claude ghi một tệp thử có chứa lệnh nối CSDL, hook đã chặn thật.
+
 Xem trước việc cài sẽ làm gì mà không ghi gì (đã chạy 21/10/2026): `node setup.js --global-hooks --dry-run` → "thêm hook guard-easypos + session-rules và EP_KIT=C:/easypos-tester-kit vào C:\Users\admin\.claude\settings.json", bộ thử 112/112.
 
 ### D7. Giao việc thật đầu tiên cho Claude
@@ -234,10 +236,36 @@ Cách kiểm: Playwright cả giao diện (chụp ảnh) lẫn API, rồi tra CS
 ```
 Claude đi 7 bước (phạm vi → phân tích → testcase → kịch bản → chạy → kiểm dữ liệu → tổng kết), mỗi bước hiện hộp **Duyệt / Sửa lại / Dừng**. **Hãy đọc kỹ từng báo cáo** ở `bao-cao\<ngày>_<chức năng>\` — đây là lúc bạn học nhiều nhất. Mở `06-tong-ket.md` trước.
 
-### D8. Sau khi dev ổn: sang UAT
-1. Hỏi DevOps địa chỉ web + API của UAT; điền `moiTruong.uat.webUrl`, `apiUrl` trong `config/moi-truong.json`.
-2. Điền khối `uat` trong `tai-khoan.json` (CSDL `easyposuat`: lấy từ `application-prodTest.yml`).
-3. Chạy lại D3, D4 với `--project=uat` / `dbq.js uat`. Rồi chạy lại kịch bản đã đạt trên dev.
+**Ví dụ thật — "Mở / đóng ca làm việc" trên dev (22/10/2026)** — báo cáo ở `C:\easypos-tester-kit\bao-cao\2026-10-22_mo-dong-ca\`:
+
+| Bước | Claude làm gì | Bạn làm gì | Kết quả |
+|---|---|---|---|
+| 0 Phạm vi | Hỏi 3 câu | Chọn: cả UI + API · từ code · nhanh | `00-pham-vi.md` |
+| 1 Phân tích | Đọc `ShiftManagementServiceImpl` (BE) và màn hình `session` (FE): mỗi người chỉ một ca mở, tiền ≥ 0, đóng lại ca đã đóng bị từ chối… ; ghi 5 điểm đáng nghi | Đọc, duyệt | `01-phan-tich.md` |
+| 2 Testcase | 11 testcase (7 BE + 4 FE) kèm dữ liệu CSDL mong đợi, 4 việc để test tay | Đọc, duyệt | `02-testcase.md` |
+| 3 Kịch bản | Viết `e2e/tests/mo-dong-ca/mo-dong-ca.spec.ts`, thêm fixture `phien`; **chạy thử đọc phiên đăng nhập và phát hiện tài khoản test chưa có quyền quản lý ca** | Chọn: chạy dev, giữ dữ liệu `AUTO_`; **tự cấp quyền "Quyền mở ca"** ở màn hình ca | `03-kich-ban.md` |
+
+**Ví dụ thật thứ hai — "Tạo sản phẩm" (22/10/2026, chạy hết 7 bước)** — `bao-cao\2026-10-22_tao-san-pham\`: 12 test đạt trên dev; tìm ra **1 lỗi thật** (trùng mã sản phẩm trả HTTP 500, lẽ ra 400) và 2 mục cần BA chốt (giá bán = 0, giới hạn mã 50 ký tự); CSDL khớp ở mọi ca. Hai bài học kỹ thuật: kiểm kết quả bằng **đúng API mà màn hình dùng** (API danh sách của màn bán hàng không thấy sản phẩm mới, API màn quản lý thì thấy), và đăng nhập giao diện nay **chọn đúng công ty theo `congTy`** (trước đó UI chọn công ty đầu tiên nên UI và API chạy trên hai công ty khác nhau).
+
+**Bài học (mở / đóng ca):** (1) Claude kiểm *điều kiện môi trường* trước khi chạy — thiếu quyền thì báo, không đoán và không tự sửa dữ liệu phân quyền. (2) Test chỉ tạo ca có mô tả `AUTO_mo-dong-ca`, tự đóng sau khi xong, và **không đóng ca có sẵn** của người khác. (3) Lỗi "thiếu quyền" là *lỗi môi trường*, không phải lỗi phần mềm — báo cáo phân loại riêng.
+
+### D8. UAT — TÙY CHỌN, Claude luôn hỏi sau khi kiểm thử xong trên dev
+**Nguyên tắc:** không phải chức năng nào test xong ở dev cũng cần lên UAT. Dev là mặc định; UAT chỉ chạy khi **tester muốn**.
+
+**Địa chỉ UAT (đã cấu hình 22/10/2026):** web `https://uat.easypos.vn/login`, application profile `prodTest`, API `https://uat.easypos.vn/api/` (đã dò: trang đăng nhập 200, `/api/p/client/ping` 200), CSDL `easyposuat` trên `10.100.110.78`. Vì `uat.easypos.vn` nằm dưới tên miền prod `easypos.vn`, nó được khai riêng ở `config/moi-truong.json → khongPhaiProd` (nếu không, bộ kit sẽ chặn nó như prod). Các tên miền khác dưới `easypos.vn` (`app.easypos.vn`, `api.easypos.vn`…) **vẫn bị chặn** vì khongPhaiProd chỉ khớp *đúng nguyên tên máy*.
+
+**Cách hoạt động (Bước 6b trong `rules/RULES.md`):** sau khi tester duyệt Bước 6 của lượt dev, Claude hỏi một câu:
+> *"Đã kiểm thử xong trên dev. Có muốn chạy lại cùng bộ kịch bản trên UAT (https://uat.easypos.vn) không?"* — **Có** · **Không, kết thúc ở dev** · **Để sau**
+
+- **Không / Để sau** (hoặc không trả lời rõ): kết thúc. Báo cáo ghi "UAT: chưa chạy".
+- **Có**: Claude (1) kiểm bạn đã điền khối `uat` trong `tai-khoan.json` chưa (chỉ báo đủ / thiếu, không đọc mật khẩu); (2) chạy `tests/_kiem-moi-truong --project=uat`; (3) chạy lại **đúng bộ kịch bản** đã dùng ở dev với `--project=uat`; (4) tra CSDL bằng `dbq.js uat`; (5) viết `04-ket-qua-uat.md`, `05-kiem-du-lieu-uat.md`, cập nhật `06-tong-ket.md` và nêu **khác biệt dev ↔ UAT**. Mỗi bước vẫn hỏi duyệt.
+
+**Việc bạn làm một lần để UAT dùng được:**
+1. Điền khối `uat` trong `C:\Users\<bạn>\.easypos-tester\tai-khoan.json`: `web` = tài khoản EasyPOS dữ liệu giả trên UAT (tắt OTP; **tài khoản dev chưa chắc dùng được ở UAT**), `db` = tài khoản CSDL UAT (user / password ở khối `datasource:` của `application-prodTest.yml`, tự gõ, không dán vào chat).
+2. Công ty muốn vào được khai **riêng từng môi trường**: dev ở `moiTruong.dev.dangNhap.api.congTy` (hiện `9839` — "Cửa hàng test Imei"), UAT ở `moiTruong.uat.dangNhap.api.congTy` (hiện **chưa khai** ⇒ lấy công ty đầu tiên của tài khoản). Id công ty ở UAT khác dev, nên khi biết công ty UAT muốn dùng, thêm khối `"api": { "congTy": "<id / mã số thuế / tên>" }` vào `dangNhap` của `uat`.
+3. Kiểm: `cd e2e` → `npx playwright test tests/_kiem-moi-truong --project=uat` (KIEM-01 mở trang) và `node "C:/easypos-tester-kit/tools/tester/dbq.js" uat <tệp.sql>`.
+
+**Chưa kiểm được ở thời điểm viết:** đăng nhập UAT (chưa có tài khoản UAT trong `tai-khoan.json`), nên chưa biết `apiUrl = https://uat.easypos.vn/api/` đã đúng cho đăng nhập API và công ty nào dùng được.
 
 ### D9. Phát cho tester khác (khi sẵn sàng)
 Tạo repo Bitbucket mới (project `EPOS`), `git init` → `git add .` → **`git status` đọc kỹ: không được có `tai-khoan.json`** → commit → push. Tester clone về, bấm `CAI-DAT.cmd`, tự điền tài khoản của họ. Gửi họ `tai-lieu/HUONG-DAN-TESTER.md`.
