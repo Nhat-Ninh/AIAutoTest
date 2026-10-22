@@ -75,7 +75,7 @@ Ghi chú nghiệp vụ lấy từ code: mở ca (`session`) — một người c
 ## 7. Repo Bitbucket (project `EPOS`, đọc bằng `tools/tester/bb.js`)
 
 `easyposbackend`, `easypos-frontend`, `easypos-gateway-cloud`, `easypos-product-material`, `easypos-report`, `easypos-cache`, `easyposasync`, `easyposconfig`, `easyposecommerce`, `invoice-service`, `warehouse-service`, `frontend-admin`, `easyposbase`, `easyposmodel`, `base-report`, `starter-config`, `starter-model`, `starter-parent`, `warehouse-model`, `warehouse-proto`, `java-boilerplate`. (`adminweb` thuộc project `CICB`.)
-Nhánh deploy thường có dạng `deployYYYYMMDD` (vd `deploy20260519`); nhánh làm việc `feature/<tên>/…`. CẦN XÁC NHẬN: nhánh nào đang chạy trên DEV và trên UAT.
+Nhánh deploy thường có dạng `deployYYYYMMDD` (vd `deploy20260519`); nhánh làm việc `feature/<tên>/…`. **DEV (`http://10.100.140.9:8082/`) chạy nhánh `dev` của mọi repo** (xác nhận 22/10/2026) — `bb.js` tự đọc nhánh này khi không truyền nhánh. Riêng `invoice-service` không có nhánh `dev`: có `dev_ei`, `dev_vte`, `dev_ngp` (theo nhà cung cấp hoá đơn). **UAT: nhánh chưa xác định** (sẽ làm sau).
 
 ## 8. Việc còn thiếu thông tin (hỏi DevOps / dev)
 

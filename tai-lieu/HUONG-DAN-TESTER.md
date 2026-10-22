@@ -78,7 +78,7 @@ Cài Node xong mà `node -v` báo `'node' is not recognized` → **đóng cmd, m
 ### 2.2 Quyền truy cập — xin trước, đỡ mất thời gian
 Xin người phụ trách:
 - **Quyền đọc repo bộ kit** `https://github.com/Nhat-Ninh/AIAutoTest.git` (repo riêng tư: bạn cần được mời làm thành viên và đăng nhập GitHub khi Git hỏi). Có thể link/ tên repo thay đổi — dùng link người phụ trách gửi.
-- **(Nên có) Quyền ĐỌC Bitbucket project `EPOS`** (`https://git-sds.softdreams.vn:7990/`). **Không cần để clone bộ kit** (bộ kit nằm ở GitHub) — nhưng ở **Bước 1 (phân tích)**, Claude đọc mã nguồn EasyPOS (`easypos-frontend`, `easyposbackend`, `easypos-product-material`…) bằng công cụ `bb.js`, công cụ này dùng quyền Bitbucket của bạn (chỉ GET, không sửa gì). Không có quyền này: phân tích bằng **tài liệu** (tệp testcase, Jira, Confluence xuất PDF) thay vì "từ code", hoặc mở sẵn thư mục mã nguồn trong VS Code nếu bạn đã có. Để `bb.js` chạy: đăng nhập Bitbucket một lần bằng `git clone` thử bất kỳ repo EPOS, hoặc đặt token chỉ-đọc trong `~\.easypos-tester\git.properties` (`git.user=`, `git.token=`).
+- **(Nên có) Quyền ĐỌC Bitbucket project `EPOS`** (`https://git-sds.softdreams.vn:7990/`). **Không cần để clone bộ kit** (bộ kit nằm ở GitHub) — nhưng ở **Bước 1 (phân tích)**, Claude đọc mã nguồn EasyPOS (`easypos-frontend`, `easyposbackend`, `easypos-product-material`…) bằng công cụ `bb.js`, công cụ này dùng quyền Bitbucket của bạn (chỉ GET, không sửa gì). Không có quyền này: phân tích bằng **tài liệu** (tệp testcase, Jira, Confluence xuất PDF) thay vì "từ code", hoặc mở sẵn thư mục mã nguồn trong VS Code nếu bạn đã có. Để `bb.js` chạy **không cần tạo token**: đăng nhập Bitbucket **một lần** bằng Git trên máy (Phần 6.5). (Ai thích dùng token chỉ-đọc thì đặt trong `~\.easypos-tester\git.properties` — tùy chọn, không bắt buộc.)
 - **Tài khoản EasyPOS dữ liệu giả cho môi trường dev**, đã **tắt OTP**, và biết **tài khoản đó vào được công ty nào** (Phần 6.3).
 - **Tài khoản đọc CSDL dev** (user / mật khẩu) — người phụ trách sẽ hướng dẫn.
 - Quyền vào **Jira** (`https://jira-sds.softdreams.vn:8080/`, project **EPB**, có quyền **tạo issue và đính kèm tệp**) và **Confluence** (`https://confluence-sds.softdreams.vn:8090/`, đọc được space **EP — EasyPos**). Bạn sẽ tạo **token cá nhân (PAT)** ở Phần 6.4.
@@ -210,11 +210,37 @@ Mở bằng cmd: `code "%USERPROFILE%\.easypos-tester\jira.properties"` (và `co
 
 **Không có token thì sao?** Kit **vẫn chạy test bình thường**. Chỉ khác: không tự tạo được ticket (bạn tạo tay theo Phần 12.5-B) và không tự lấy được tài liệu Confluence (đưa tài liệu cho Claude bằng PDF / Word, hoặc chọn loại kiểm thử **kỹ thuật**, Phần 8.3).
 
+### 6.5 Đăng nhập Bitbucket một lần (để Claude đọc được mã nguồn — KHÔNG cần token)
+
+**Để làm gì:** ở Bước 1 (phân tích), Claude đọc mã nguồn EasyPOS trên Bitbucket bằng công cụ `tools\tester\bb.js` (chỉ đọc, không tải repo về máy). Công cụ này **tự dùng tài khoản Bitbucket mà Git trên máy đã lưu** — bạn chỉ cần để Git đăng nhập **một lần**. Không phải tạo token, không phải điền tệp nào.
+
+**Điều kiện:** VPN bật · đã cài Git (Phần 2.1) · tài khoản Bitbucket của bạn có **quyền đọc project `EPOS`** (Phần 2.2).
+
+**Làm một lần (trong cmd):**
+```
+git ls-remote https://git-sds.softdreams.vn:7990/scm/epos/easypos-gateway-cloud.git HEAD
+```
+1. Lệnh này **không tải code**, chỉ hỏi "nhánh chính của repo ở commit nào" — nhưng buộc Git phải đăng nhập.
+2. Một cửa sổ **đăng nhập Bitbucket** hiện ra (Git Credential Manager): nhập **tên đăng nhập + mật khẩu Bitbucket của bạn** (hoặc đăng nhập theo cửa sổ hiện ra). Bạn **tự gõ trong cửa sổ đó**, không gõ vào chat Claude.
+3. Thành công khi lệnh in ra **một dòng** dạng `<mã commit dài>  HEAD`. Git đã nhớ tài khoản cho các lần sau.
+   - Không hiện cửa sổ mà hỏi trong cmd: gõ tên đăng nhập / mật khẩu ngay tại cmd cũng được.
+   - Báo `403` / `Authentication failed` / `not authorized`: sai mật khẩu, hoặc **chưa được cấp quyền đọc `EPOS`** → xin người phụ trách / admin Bitbucket.
+   - Vừa **đổi mật khẩu** Bitbucket: chạy lại lệnh trên và nhập mật khẩu mới (nếu vẫn báo sai: Windows → *Credential Manager* → *Windows Credentials* → xoá mục `git:https://git-sds.softdreams.vn:7990` rồi chạy lại).
+
+**Kiểm tra:** chạy `KIEM-TRA-MAY.cmd` — mục **8c** phải báo `[OK] Bitbucket: đọc được N repo trong project EPOS`. Hoặc chạy riêng: `node tools\tester\bb.js repo` — thấy danh sách repo (easyposbackend, easypos-frontend, …) là được.
+
+**Nhánh code được đọc:** môi trường **dev (8082)** đang chạy nhánh **`dev`** của mọi repo, nên công cụ **tự đọc nhánh `dev`** — bạn không cần nói gì thêm. Báo cáo ghi nhánh và mã commit đã đọc. Ba lưu ý:
+- Repo **`invoice-service`** không có nhánh `dev` mà có `dev_ei`, `dev_vte`, `dev_ngp` (theo nhà cung cấp hoá đơn) — khi test hoá đơn, nói cho Claude biết bạn test nhà cung cấp nào.
+- Môi trường **UAT** chưa xác định nhánh (sẽ bổ sung sau) — khi test UAT Claude sẽ hỏi bạn.
+- Muốn đọc nhánh khác (ví dụ nhánh của một PR đang chờ merge) thì nói rõ tên nhánh; báo cáo sẽ ghi "không phải code đang chạy trên dev".
+
+**Không làm được bước này thì sao?** Kit vẫn chạy test. Claude phân tích bằng **tài liệu** (Confluence / Jira / tệp testcase) hoặc bạn mở sẵn thư mục mã nguồn trong VS Code — nhưng sẽ không đối chiếu được "tài liệu ↔ code".
+
 ---
 
 ## Phần 7. ⚕ Kiểm tra máy bằng `KIEM-TRA-MAY.cmd` (CỔNG KIỂM 3 — quan trọng nhất)
 
-Đây là bước thay thế việc "tự đoán" lỗi. Nó kiểm **9 nhóm điều kiện** và nói rõ chỗ nào hỏng, sửa thế nào.
+Đây là bước thay thế việc "tự đoán" lỗi. Nó kiểm **các nhóm điều kiện (1–9, gồm cả Jira, Confluence, Bitbucket)** và nói rõ chỗ nào hỏng, sửa thế nào.
 
 1. Mở `C:\easypos-tester`, **bấm đúp `KIEM-TRA-MAY.cmd`**. (Hoặc trong cmd: `cd /d C:\easypos-tester` rồi `KIEM-TRA-MAY.cmd`.)
 2. Đọc kết quả. Mỗi dòng: **`[OK]`** tốt · **`[!]`** cảnh báo (đọc; thường không chặn) · **`[X]`** lỗi phải sửa — kèm dòng **`→`** chỉ cách sửa.
@@ -232,6 +258,7 @@ Mở bằng cmd: `code "%USERPROFILE%\.easypos-tester\jira.properties"` (và `co
 | 7. CSDL | Đọc được `easyposbackoffice` | Sai mật khẩu CSDL / VPN. **Đừng thử lại liên tục** (có thể bị khoá) |
 | 8. Hook | Đã cài hook, `EP_KIT` đúng thư mục | `CAI-DAT.cmd` → Reload Window |
 | 8b. Jira / Confluence | Token dùng được, có quyền tạo ticket | Tạo / ghi lại token (Phần 6.4). Chỉ là cảnh báo `[!]`, không chặn |
+| 8c. Bitbucket | `bb.js repo` đọc được danh sách repo EPOS | Đăng nhập Git một lần (Phần 6.5); xin quyền đọc EPOS. Chỉ là cảnh báo `[!]`, không chặn |
 | 9. Đăng nhập thật (`--sau`) | 3 bài kiểm đăng nhập giao diện + API | Xem bảng lỗi Phần 13 |
 
 > **Khi cần nhờ hỗ trợ:** chạy `KIEM-TRA-MAY.cmd --sau`, **chọn toàn bộ chữ trên cửa sổ, chép và gửi** người phụ trách. Kết quả không chứa mật khẩu và cho biết ngay bạn kẹt ở đâu.

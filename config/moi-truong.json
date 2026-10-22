@@ -99,6 +99,11 @@
     "10.100.110.79",
     "10.100.110.82"
   ],
+  "nhanhCode": {
+    "dev": "dev",
+    "uat": "",
+    "ghiChu": "Nhánh Bitbucket đang được deploy lên từng môi trường (người phụ trách xác nhận 22/10/2026: DEV = nhánh `dev` của mọi repo EPOS). UAT chưa xác định — để trống; bb.js tep/ls/commit không truyền nhánh sẽ đọc nhánh của DEV. Đổi nhánh khác bằng cách truyền tên nhánh vào lệnh, hoặc biến EP_BB_NHANH."
+  },
   "khongPhaiProd": [
     "testtranshub.easypos.vn",
     "uat.easypos.vn"

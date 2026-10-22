@@ -25,7 +25,7 @@ const ctx = rules
   + '- CSDL TEST / UAT (chỉ SELECT): `node "$EP_KIT/tools/tester/dbq.js" <môi trường> <tệp.sql>` — viết câu SQL vào tệp ở một lệnh, chạy ở lệnh sau; không dùng sqlcmd / driver tự viết.\n'
   + '- Jira (mã `EPB-…`): đọc `node "$EP_KIT/tools/jira/jira.js" <MÃ>`. TẠO ticket lỗi (Bước 6a): `node "$EP_KIT/tools/jira/jira-tao.js" <nháp .jira.md>` = xem trước, thêm `--tao` = tạo thật SAU KHI tester duyệt; mẫu nháp `mau-bao-cao/07-jira-nhap.md`. Chỉ tạo mới; token là của chính tester (reporter = tester).\n'
   + '- Confluence (chỉ đọc): `node "$EP_KIT/tools/confluence/confluence.js" tim "<từ khóa>" --space EP` · `trang <id|URL>` · `con <id>` · `dinh-kem <id>` · `lien-ket <id>`; lưu ở `tai-lieu-nghiep-vu/`. Loại kiểm thử KỸ THUẬT thì KHÔNG cần Confluence. Không bịa nghiệp vụ: trích dẫn trang + phiên bản.\n'
-  + '- Đọc code mọi repo của project Bitbucket `EPOS` không tải về: `node "$EP_KIT/tools/tester/bb.js" jira <MÃ> · pr <repo> <số> · so-sanh <repo> <từ> <đến> · tep <repo> <đường-dẫn> <nhánh> · nhanh <repo>`.\n'
+  + '- Đọc code mọi repo của project Bitbucket `EPOS` không tải về: `node "$EP_KIT/tools/tester/bb.js" jira <MÃ> · pr <repo> <số> · so-sanh <repo> <từ> <đến> · tep <repo> <đường-dẫn> <nhánh> · nhanh <repo>`. DEV chạy nhánh `dev` của mọi repo (không truyền nhánh ⇒ bb.js tự đọc `dev`; riêng `invoice-service` dùng `dev_ei` / `dev_vte` / `dev_ngp`); ghi nhánh + commit đã đọc vào báo cáo; UAT chưa rõ nhánh ⇒ hỏi tester.\n'
   + '- Mẫu báo cáo từng bước: `$EP_KIT/mau-bao-cao/00…06`; báo cáo ghi vào `$EP_KIT/bao-cao/<ngày>_<chức năng>/`.\n';
 
 process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: ctx } }));

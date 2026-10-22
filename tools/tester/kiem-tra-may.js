@@ -171,6 +171,20 @@ function thuMucTrinhDuyet() {
   };
   if (coPw !== undefined) { thuTok('Jira', path.join('jira', 'jira-tao.js'), '--toi'); thuTok('Confluence', path.join('confluence', 'confluence.js'), 'toi'); }
 
+  /* 8c. Bitbucket (tài khoản Git đã đăng nhập hoặc token riêng) */
+  tieuDe('8c. Bitbucket — Claude đọc mã nguồn qua bb.js (tùy chọn nhưng nên có)');
+  {
+    const r = chay('node', ['"' + path.join(KIT, 'tools', 'tester', 'bb.js') + '"', 'repo']);
+    const out = ((r.stdout || '') + '\n' + (r.stderr || '')).split(/\r?\n/).filter(l => l.trim());
+    if (r.status === 0 && out.length) ok('Bitbucket: đọc được ' + out.length + ' repo trong project EPOS');
+    else {
+      const noi = out.join(' ');
+      if (/Chua co tai khoan/.test(noi)) canhBao('Bitbucket: Git trên máy chưa đăng nhập Bitbucket', 'Chạy một lần: git ls-remote https://git-sds.softdreams.vn:7990/scm/epos/easypos-gateway-cloud.git HEAD  rồi đăng nhập (HUONG-DAN-TESTER.md Phần 6.5). Không có cũng test được, chỉ không đọc được mã nguồn');
+      else if (/401|403|KHONG co quyen/.test(noi)) canhBao('Bitbucket: tài khoản không có quyền đọc project EPOS (hoặc mật khẩu đã đổi)', 'Xin quyền đọc EPOS; hoặc đăng nhập lại Git (Phần 6.5)');
+      else canhBao('Bitbucket: không kết nối được — ' + (out[out.length - 1] || '').slice(0, 160), 'Kiểm VPN');
+    }
+  }
+
   /* 9. Bài kiểm đăng nhập (tùy chọn) */
   if (SAU) {
     tieuDe('9. Bài kiểm đăng nhập giao diện + API trên dev (mất ~30 giây)');

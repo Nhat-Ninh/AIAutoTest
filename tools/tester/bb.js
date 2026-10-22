@@ -97,6 +97,15 @@ function refOf(x) {
   if (/^refs\//.test(x) || /^[0-9a-f]{7,40}$/i.test(x)) return x;
   return 'refs/heads/' + x;
 }
+// Nhánh mặc định khi lệnh không truyền nhánh: biến EP_BB_NHANH > config/moi-truong.json → nhanhCode.dev (nhánh đang deploy lên DEV).
+// Không có cấu hình thì để Bitbucket dùng nhánh mặc định của repo.
+function nhanhMacDinh() {
+  if (process.env.EP_BB_NHANH) return refOf(process.env.EP_BB_NHANH);
+  try {
+    const c = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'config', 'moi-truong.json'), 'utf8'));
+    return (c.nhanhCode && c.nhanhCode.dev) ? refOf(c.nhanhCode.dev) : null;
+  } catch (e) { return null; }
+}
 const ngay = ms => ms ? new Date(ms).toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).slice(0, 16) : '';
 const ten = u => (u && (u.user ? (u.user.displayName || u.user.name) : (u.displayName || u.name))) || '?';
 
@@ -207,8 +216,9 @@ async function main() {
     return;
   }
   if (lenh === 'tep') {
-    const R = repoPath(a[1]); const f = a[2]; const at = refOf(a[3]);
+    const R = repoPath(a[1]); const f = a[2]; const at = refOf(a[3]) || nhanhMacDinh();
     if (!f || f.includes('..')) die('Cach dung: node bb.js tep <repo> <duong-dan> [nhanh]');
+    if (!a[3] && at) console.error('# nhanh: ' + at.replace(/^refs\/heads\//, '') + ' (nhanh DEV mac dinh)');
     // Đường REST /raw (đường web /projects/…/raw chuyển hướng sang trang đăng nhập với token).
     const r = await get(R.rest + '/raw/' + f.split('/').map(encodeURIComponent).join('/') + (at ? '?at=' + encodeURIComponent(at) : ''), '*/*');
     if (r.s !== 200) loiHttp(r, f + ' (' + (a[3] || 'nhanh mac dinh') + ')');
@@ -216,14 +226,15 @@ async function main() {
     return;
   }
   if (lenh === 'ls') {
-    const R = repoPath(a[1]); const dir = (a[2] || '').replace(/^\/+|\/+$/g, ''); const at = refOf(a[3]);
+    const R = repoPath(a[1]); const dir = (a[2] || '').replace(/^\/+|\/+$/g, ''); const at = refOf(a[3]) || nhanhMacDinh();
+    if (!a[3] && at) console.error('# nhanh: ' + at.replace(/^refs\/heads\//, '') + ' (nhanh DEV mac dinh)');
     if (dir.includes('..')) die('Duong dan khong hop le');
     const j = await json(R.rest + '/browse/' + dir.split('/').filter(Boolean).map(encodeURIComponent).join('/') + '?limit=1000' + (at ? '&at=' + encodeURIComponent(at) : ''), 'thu muc ' + (dir || '/'));
     for (const c of (j.children && j.children.values) || []) console.log((c.type === 'DIRECTORY' ? c.path.toString + '/' : c.path.toString));
     return;
   }
   if (lenh === 'commit') {
-    const R = repoPath(a[1]); const at = refOf(a[2]); const n = Math.min(parseInt(a[3] || '20', 10) || 20, 200);
+    const R = repoPath(a[1]); const at = refOf(a[2]) || nhanhMacDinh(); const n = Math.min(parseInt(a[3] || '20', 10) || 20, 200);
     const ds = await tatCa(R.rest + '/commits' + (at ? '?until=' + encodeURIComponent(at) : ''), 'commit', n);
     for (const c of ds) console.log(c.displayId + ' ' + ngay(c.authorTimestamp) + ' ' + (c.author && c.author.name) + ': ' + c.message.split('\n')[0]);
     return;
