@@ -18,7 +18,7 @@ if ($doi) { Loi 'Co tep bi sua tay trong thu muc bo kit (git status) - khong keo
 
 $cu = (cmd /c ('git -C "' + $kit + '" rev-parse HEAD 2>&1')).Trim()
 cmd /c ('git -C "' + $kit + '" pull --ff-only 2>&1') | ForEach-Object { Write-Host ('  ' + $_) }
-if ($LASTEXITCODE -ne 0) { Loi 'git pull loi (mang / quyen Bitbucket / lich su lech) - hook GIU NGUYEN ban cu.'; exit 1 }
+if ($LASTEXITCODE -ne 0) { Loi 'git pull loi (mang / quyen truy cap repo / lich su lech) - hook GIU NGUYEN ban cu.'; exit 1 }
 $moi = (cmd /c ('git -C "' + $kit + '" rev-parse HEAD 2>&1')).Trim()
 if ($cu -eq $moi) { Dat 'Da la ban moi nhat.' }
 else {

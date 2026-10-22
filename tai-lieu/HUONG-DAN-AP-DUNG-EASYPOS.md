@@ -268,6 +268,8 @@ Claude đi 7 bước (phạm vi → phân tích → testcase → kịch bản �
 **Chưa kiểm được ở thời điểm viết:** đăng nhập UAT (chưa có tài khoản UAT trong `tai-khoan.json`), nên chưa biết `apiUrl = https://uat.easypos.vn/api/` đã đúng cho đăng nhập API và công ty nào dùng được.
 
 ### D9. Phát cho tester khác (khi sẵn sàng)
+> **Cập nhật 22/10/2026:** repo bộ kit đang ở GitHub (`https://github.com/Nhat-Ninh/AIAutoTest.git`) — phải **mời tester vào repo** trước. Tester clone bằng `git clone <link> C:\easypos-tester` (có đường dẫn đích để khỏi lồng thư mục), điền tài khoản, rồi bấm **`KIEM-TRA-MAY.cmd`** (và `--sau`) — công cụ này kiểm từng điều kiện và chỉ cách sửa, đã bắt được các lỗi thật gặp ở máy tester (thiếu ffmpeg / trình duyệt Playwright, công ty không thuộc tài khoản, thiếu VPN, quên lưu tài khoản). Hướng dẫn đầy đủ từ A đến Z cho tester: `HUONG-DAN-TESTER.md`.
+
 Tạo repo Bitbucket mới (project `EPOS`), `git init` → `git add .` → **`git status` đọc kỹ: không được có `tai-khoan.json`** → commit → push. Tester clone về, bấm `CAI-DAT.cmd`, tự điền tài khoản của họ. Gửi họ `tai-lieu/HUONG-DAN-TESTER.md`.
 
 ---

@@ -103,6 +103,7 @@ Write-Host '  - web: tai khoan EasyPOS du lieu GIA, da TAT OTP.   - db: tai khoa
 Write-Host '  - KHONG dan mat khau vao chat Claude.'
 
 TieuDe 'XONG'
+Write-Host '  BUOC TIEP: dien tai khoan (muc 5 o tren), roi BAM DUP KIEM-TRA-MAY.cmd - no kiem tung dieu kien va chi cach sua. Toan [OK] moi giao viec cho Claude.' -ForegroundColor Cyan
 Write-Host '  Trong VS Code: Ctrl+Shift+P -> "Developer: Reload Window", roi mo cuoc tro chuyen Claude MOI.'
 Write-Host '  Kiem: hoi Claude "EP_KIT o dau" - phai ra' ($dest -replace '\\', '/')
 Write-Host '  Go hook: bam GO-CAI-DAT.cmd. Mat khau nam o ~/.easypos-tester - KHONG commit, KHONG dan vao chat.'

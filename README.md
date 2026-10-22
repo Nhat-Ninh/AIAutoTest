@@ -20,11 +20,13 @@ báo cáo + lỗi theo mẫu Jira (`EPB-…`). Hook chặn nối CSDL trực ti�
 | `tools/tester/` | `dbq.js` (đọc CSDL, chỉ SELECT), `bb.js` (đọc Bitbucket project EPOS), `kiem-trinh-duyet.js` |
 | `tools/jira/jira.js` | Đọc ticket Jira |
 | `tools/install/` | Bộ cài / cập nhật (`CAI-DAT.cmd`, `CAP-NHAT.cmd`, `GO-CAI-DAT.cmd`) |
+| `KIEM-TRA-MAY.cmd` + `tools/tester/kiem-tra-may.js` | **Bác sĩ máy**: kiểm cài đặt, VPN, tài khoản, CSDL, trình duyệt, hook và chỉ cách sửa (`--sau` = thử đăng nhập thật) |
 | `tai-lieu/` | Bản đồ hệ thống EasyPOS, hướng dẫn leader, hướng dẫn tester |
 
 ## Dùng nhanh
 1. Cần Node.js 18+, Git, VS Code + extension Claude Code, VPN công ty.
 2. `node hooks/guard-easypos.test.js` — phải báo `N/N ca đúng`.
 3. Bấm `CAI-DAT.cmd` → mở VS Code, Reload Window, mở cuộc trò chuyện Claude **mới**.
+   Điền tài khoản rồi **bấm `KIEM-TRA-MAY.cmd`** (và `KIEM-TRA-MAY.cmd --sau`) — phải "máy sẵn sàng" mới giao việc cho Claude.
 4. Tự gõ tài khoản vào `~/.easypos-tester/tai-khoan.json`. Không bao giờ dán mật khẩu vào chat Claude.
 5. Mỗi máy chỉ cài **một** bộ kit.
