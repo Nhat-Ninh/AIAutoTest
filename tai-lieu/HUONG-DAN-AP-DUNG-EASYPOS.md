@@ -279,7 +279,7 @@ Tạo repo Bitbucket mới (project `EPOS`), `git init` → `git add .` → **`g
 | Thông báo / triệu chứng | Nghĩa là | Cách xử |
 |---|---|---|
 | `node` / `npx` "not recognized" | Windows chưa nhận Node trong cửa sổ này | Mở terminal mới, hoặc chạy `$env:Path = 'C:\Program Files\nodejs;' + $env:Path` |
-| KIEM-01 lỗi, trang không mở | Quên VPN, hoặc sai `webUrl` | Bật VPN; mở thử `http://10.100.110.78/` bằng trình duyệt |
+| KIEM-01 lỗi, trang không mở | Quên VPN, hoặc sai `webUrl` | Bật VPN; mở thử `http://10.100.140.9:8082/` bằng trình duyệt |
 | 2 bài `skipped` | Thiếu tài khoản web trong `tai-khoan.json` | D2; nhớ Ctrl+S |
 | `Chua co tai khoan CSDL…` (dbq) | Thiếu `db.user`/`db.password` | D2 |
 | `Đăng nhập API … lỗi HTTP 404` | Sai `apiUrl` (thiếu/sai phần đường dẫn) | F12 → tab Network → đăng nhập → bấm request `authenticate` → xem **Request URL** thật |

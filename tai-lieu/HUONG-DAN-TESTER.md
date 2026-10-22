@@ -38,7 +38,7 @@ Bạn nói với Claude: *"Kiểm thử chức năng Tạo sản phẩm trên de
 
 | Môi trường | Là gì | Khi nào |
 |---|---|---|
-| `dev` | Dev dùng chung — `http://10.100.110.78/`, CSDL `easyposbackoffice` | **Mặc định**, luôn test ở đây |
+| `dev` | Dev dùng chung — `http://10.100.140.9:8082/`, CSDL `easyposbackoffice` | **Mặc định**, luôn test ở đây |
 | `uat` | `https://uat.easypos.vn` (profile `prodTest`, CSDL `easyposuat`) | **Tùy chọn của bạn** (Phần 11) |
 | PROD | Hệ thống thật của khách | **Cấm**, bộ kit chặn bằng máy |
 
@@ -54,7 +54,7 @@ Bạn nói với Claude: *"Kiểm thử chức năng Tạo sản phẩm trên de
 | 2 | Extension **Claude Code** | VS Code → Extensions → "Claude Code" → Install | thấy biểu tượng Claude |
 | 3 | **Git** | https://git-scm.com/download/win | `git --version` |
 | 4 | **Node.js LTS (≥ 18)** | https://nodejs.org/en/download | `node -v` và `npm -v` |
-| 5 | **VPN công ty** | IT / người phụ trách | trình duyệt mở được `http://10.100.110.78/` |
+| 5 | **VPN công ty** | IT / người phụ trách | trình duyệt mở được `http://10.100.140.9:8082/` |
 
 Cài Node xong mà `node -v` báo `'node' is not recognized` → **đóng cmd, mở lại** (Windows chỉ nhận lệnh mới ở cửa sổ mới).
 
@@ -67,7 +67,7 @@ Xin người phụ trách:
 
 ### ✅ CỔNG KIỂM 1 — trước khi cài
 - [ ] `git --version`, `node -v`, `npm -v` đều ra số phiên bản.
-- [ ] VPN bật và mở được `http://10.100.110.78/` bằng trình duyệt (thấy trang đăng nhập EasyPOS).
+- [ ] VPN bật và mở được `http://10.100.140.9:8082/` bằng trình duyệt (thấy trang đăng nhập EasyPOS).
 - [ ] Đã được mời vào repo bộ kit và có trong tay tài khoản (web + CSDL).
 
 ---

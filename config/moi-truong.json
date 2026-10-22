@@ -15,8 +15,8 @@
   "moiTruong": {
     "dev": {
       "ten": "DEV EasyPOS (kiểm thử trước)",
-      "webUrl": "http://10.100.110.78/",
-      "apiUrl": "http://10.100.110.78/api/",
+      "webUrl": "http://10.100.140.9:8082/",
+      "apiUrl": "http://10.100.140.9:8082/api/",
       "headerThem": {},
       "db": {
         "host": "10.100.110.78",
@@ -32,7 +32,7 @@
         }
       },
       "phuTro": {
-        "canXacNhan": "DEV = máy 10.100.110.78 (người phụ trách xác nhận 21/10/2026). Đang dùng cổng 80 (nginx, FE + /api/ cùng gốc; ping API 200). Máy này còn cổng 8081 (nginx, bản build khác) và 8888 (gateway) cùng trả FE + API — nếu đăng nhập ở cổng 80 không đúng dữ liệu của CSDL easyposbackoffice thì thử đổi webUrl / apiUrl sang 8081 hoặc 8888. DEV có dev đang sửa code liên tục: lỗi chập chờn có thể do môi trường.",
+        "canXacNhan": "Web DEV do người phụ trách chỉ định 22/10/2026: http://10.100.140.9:8082/ (FE cổng 8082 + /api/ cùng gốc; ping API 200). Trước đó dùng http://10.100.110.78/ (cũng cùng CSDL easyposbackoffice @ 10.100.110.78 — cần xác nhận CSDL của địa chỉ mới có đúng là easyposbackoffice không: so số liệu API với dbq). DEV có dev đang sửa code liên tục: lỗi chập chờn có thể do môi trường.",
         "mongo": "EasyPosAsync (10.100.110.78:27017) — dbq chưa hỗ trợ MongoDB"
       }
     },
