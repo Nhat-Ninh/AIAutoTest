@@ -2,9 +2,12 @@
  * CHỐT CHẶN: địa chỉ web / API prod ⇒ dừng ngay lúc nạp cấu hình (kiemUrl), trừ khi lệnh chạy đặt EP_CHO_PHEP_PROD=1.
  * Sửa tệp này phải được người phụ trách đồng ý. */
 import { defineConfig } from '@playwright/test';
-import { cauHinh, choPhepProd, dsMoiTruong, kiemUrl, laMoiTruongProd, rieng, Env } from './lib/moi-truong';
+import { cauHinh, choPhepProd, coFfmpeg, dsMoiTruong, kiemUrl, laMoiTruongProd, rieng, Env } from './lib/moi-truong';
 
-const trinhDuyet = rieng.trinhDuyet || cauHinh.trinhDuyet || 'chromium';   // 'msedge' khi máy không tải được chromium
+const trinhDuyet = process.env.EP_TRINH_DUYET || rieng.trinhDuyet || cauHinh.trinhDuyet || 'chromium';   // 'msedge' khi máy không tải được chromium
+
+const videoBat = coFfmpeg();
+if (!videoBat) console.warn('[kit] Chưa có ffmpeg của Playwright ⇒ TẮT quay video khi test trượt. Muốn có video: cd e2e && npx playwright install ffmpeg');
 
 function project(env: Env) {
   const m = cauHinh?.moiTruong?.[env] || {};
@@ -34,7 +37,8 @@ export default defineConfig({
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // Quay video khi trượt CHỈ khi máy có ffmpeg của Playwright; thiếu ffmpeg (vd chỉ dùng Edge có sẵn) thì tắt video để test vẫn chạy.
+    video: videoBat ? 'retain-on-failure' : 'off',
     locale: 'vi-VN',
     timezoneId: 'Asia/Ho_Chi_Minh',
     ignoreHTTPSErrors: true,

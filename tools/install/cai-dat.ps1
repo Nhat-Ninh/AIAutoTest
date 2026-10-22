@@ -90,6 +90,9 @@ if (Test-Path $cli) {
         $c = ChayHan ('node "' + (Join-Path $dest 'tools\tester\kiem-trinh-duyet.js') + '"') 180
     }
     if ($c -eq 0) { Dat 'Playwright mo duoc trinh duyet.' } else { Canh 'Playwright chua mo duoc trinh duyet - ca test API van chay duoc, ca giao dien thi chua.' }
+    # ffmpeg (quay video khi test truot) tai RIENG voi chromium. May chi dung Edge co san thi khong co ffmpeg: thu tai, khong duoc thi cau hinh tu tat video.
+    $c2 = ChayHan ('cd /d "' + $e2e + '" && node "' + $cli + '" install ffmpeg') 300
+    if ($c2 -eq 0) { Dat 'Da co ffmpeg (quay video khi test truot).' } else { Canh 'Khong tai duoc ffmpeg (mang chan?) - test van chay, bo kit tu tat quay video. Co mang tot: cd e2e && npx playwright install ffmpeg' }
 }
 
 # ---------------------------------------------------------------- 5. tai khoan

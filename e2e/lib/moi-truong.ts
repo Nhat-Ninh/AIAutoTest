@@ -108,3 +108,15 @@ export function kiemUrl(url: string, ten: string, envProd = false): string {
   }
   return url;
 }
+
+/** Máy đã tải ffmpeg của Playwright chưa? (cần để QUAY VIDEO khi test trượt). Máy chỉ dùng Edge / Chrome có sẵn (không tải được trình duyệt
+ *  của Playwright) thường KHÔNG có ffmpeg ⇒ bật video sẽ làm MỌI test mở trình duyệt báo "Executable doesn't exist … ffmpeg". */
+export function coFfmpeg(): boolean {
+  const goc = process.env.PLAYWRIGHT_BROWSERS_PATH && process.env.PLAYWRIGHT_BROWSERS_PATH !== '0'
+    ? process.env.PLAYWRIGHT_BROWSERS_PATH
+    : process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'ms-playwright')
+      : process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright') : path.join(os.homedir(), '.cache', 'ms-playwright');
+  try {
+    return fs.readdirSync(goc).some(d => /^ffmpeg-\d+$/.test(d) && fs.readdirSync(path.join(goc, d)).some(f => /^ffmpeg/i.test(f)));
+  } catch { return false; }
+}
