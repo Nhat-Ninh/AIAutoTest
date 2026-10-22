@@ -19,6 +19,9 @@ báo cáo + lỗi theo mẫu Jira (`EPB-…`). Hook chặn nối CSDL trực ti�
 | `mau-bao-cao/` | Mẫu báo cáo từng bước 00 → 06 |
 | `tools/tester/` | `dbq.js` (đọc CSDL, chỉ SELECT), `bb.js` (đọc Bitbucket project EPOS), `kiem-trinh-duyet.js` |
 | `tools/jira/jira.js` | Đọc ticket Jira |
+| `tools/jira/jira-tao.js` + `config/jira.json` | **Tạo ticket Bug** từ nháp đã duyệt (xem trước / `--tao`), đính kèm, chống trùng, in link; tester chỉ bấm Assign |
+| `tools/confluence/confluence.js` | **Đọc tài liệu nghiệp vụ** từ Confluence → markdown có phiên bản (`tim`, `trang`, `con`, `dinh-kem`, `lien-ket`); loại kiểm thử "kỹ thuật" không cần |
+| `tools/lib/atlassian.js` | Phần dùng chung: nạp token (PAT), gọi REST, quét bí mật |
 | `tools/install/` | Bộ cài / cập nhật (`CAI-DAT.cmd`, `CAP-NHAT.cmd`, `GO-CAI-DAT.cmd`) |
 | `KIEM-TRA-MAY.cmd` + `tools/tester/kiem-tra-may.js` | **Bác sĩ máy**: kiểm cài đặt, VPN, tài khoản, CSDL, trình duyệt, hook và chỉ cách sửa (`--sau` = thử đăng nhập thật) |
 | `tai-lieu/` | Bản đồ hệ thống EasyPOS, hướng dẫn leader, hướng dẫn tester |

@@ -1,0 +1,25 @@
+{
+  "_ghiChu": [
+    "Cấu hình cho tools/jira/jira-tao.js (tạo ticket Bug từ nháp). KHÔNG chứa token. Người phụ trách bộ kit chỉnh một lần.",
+    "project / loaiPhieu: công cụ CHỈ tạo trong project này và loại phiếu này (chốt an toàn). Muốn mở rộng phải sửa tệp này.",
+    "nhanMacDinh: nhãn gắn cho mọi ticket do kit tạo (để lọc / dọn hàng loạt). Công cụ còn tự thêm nhãn at-<mã băm> để chống tạo trùng.",
+    "truongThem: trường BẮT BUỘC của project mà nháp không có (xem: node tools/jira/jira-tao.js --meta). Khoá = tên hoặc id trường; giá trị chuỗi / số — công cụ tự đổi sang dạng Jira cần (option, version, user…).",
+    "gioiHanMoiGio: số ticket tối đa kit được tạo trong 1 giờ trên máy này (chống vòng lặp tạo rác).",
+    "Reporter = chủ của PAT (người chạy). Chỉ đặt reporter khác khi nháp có reporter: và PAT có quyền Modify Reporter.",
+    "maDuAnLienKet: mã project Jira được coi là 'mã Jira' khi đọc trang Confluence (confluence.js lien-ket); các mã khác dạng XX-nn (BR-01, US-01…) là mã nghiệp vụ BA đánh sẵn."
+  ],
+  "project": "EPB",
+  "loaiPhieu": [
+    "Bug"
+  ],
+  "nhanMacDinh": [
+    "auto-test"
+  ],
+  "truongThem": {},
+  "gioiHanMoiGio": 10,
+  "toiDaDinhKem": 10,
+  "dungLuongDinhKemToiDa": 10485760,
+  "maDuAnLienKet": [
+    "EPB"
+  ]
+}

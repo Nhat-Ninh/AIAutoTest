@@ -92,7 +92,9 @@ function writeIfMissing(dst, text) {
 if (!fs.existsSync(CFG)) { step('tạo thư mục ' + CFG); if (!DRY) fs.mkdirSync(CFG, { recursive: true }); }
 writeIfMissing(path.join(CFG, 'tai-khoan.json'), fs.readFileSync(path.join(ROOT, 'config', 'tai-khoan.example.json'), 'utf8'));
 writeIfMissing(path.join(CFG, 'jira.properties'),
-  '# PAT Jira của CHÍNH BẠN (Jira → Profile → Personal Access Tokens, chỉ cần quyền đọc). Tự gõ, không dán vào chat.\njira.token=\n');
+  '# PAT Jira của CHÍNH BẠN (Jira → avatar → Profile → Personal Access Tokens → Create token). Dùng để ĐỌC ticket và TẠO ticket lỗi (jira-tao.js). Tự gõ, không dán vào chat.\njira.token=\n');
+writeIfMissing(path.join(CFG, 'confluence.properties'),
+  '# PAT Confluence của CHÍNH BẠN (Confluence → avatar → Settings → Personal Access Tokens → Create token). Chỉ dùng để ĐỌC tài liệu nghiệp vụ (confluence.js). Tự gõ, không dán vào chat.\nconfluence.token=\n');
 writeIfMissing(path.join(CFG, 'git.properties'),
   '# (Tuỳ chọn) HTTP access token Bitbucket của chính bạn (chỉ quyền đọc) cho tools/tester/bb.js. Để trống thì bb.js dùng tài khoản git đã đăng nhập trên máy.\ngit.user=\ngit.token=\n');
 

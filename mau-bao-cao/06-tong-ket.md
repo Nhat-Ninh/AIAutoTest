@@ -2,6 +2,10 @@
 
 **Kết luận:** Đạt / Không đạt — <1-2 câu>
 
+**Phạm vi đã kiểm:** <nghiệp vụ | kỹ thuật | cả hai>. Nếu *kỹ thuật*: ghi rõ **"chưa kiểm tính đúng nghiệp vụ"**.
+**Tài liệu đã dùng:** <trang Confluence — phiên bản n — link> / không có.
+**Phủ nghiệp vụ:** <số BR có testcase>/<tổng BR> (chi tiết ma trận ở `02-testcase.md`).
+
 | Mã | Kết quả |
 |---|---|
 | TC-… | ✅ / ❌ / ⚠️ / ⏸ |
@@ -14,6 +18,8 @@
 - Kết quả mong đợi: …
 - Bằng chứng: <ảnh / phản hồi API / SQL>
 - Đã xác nhận lại trên UAT (nếu lỗi tìm thấy trên dev): có / chưa / không áp dụng
+- Quy tắc nghiệp vụ liên quan: <BR-xx — trang Confluence › mục · phiên bản> hoặc "kỹ thuật (không có BR)"
+- Jira: <EPB-xxxxx + link> (tạo bằng `jira-tao.js` sau khi tester duyệt; tester bấm Assign) · nháp: `BUG-1.jira.md`
 - Liên kết: <mã Jira liên quan>
 
 ## Việc còn phải test tay

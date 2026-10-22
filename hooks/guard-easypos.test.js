@@ -42,6 +42,12 @@ const cases = [
   // ---- tra CSDL: chỉ qua dbq.js
   ['dbq.js SELECT', bash(`node ${DBQ} uat c:/tmp/q.sql`), 'allow'],
   ['dbq.js SELECT trên môi trường dev', bash(`node ${DBQ} dev c:/tmp/q.sql`), 'allow'],
+  ['jira-tao.js xem trước (dry-run) ⇒ cho', bash(`node "${K('tools', 'jira', 'jira-tao.js').replace(/\\/g, '/')}" bao-cao/x/BUG-1.jira.md`), 'allow'],
+  ['jira-tao.js --toi ⇒ cho', bash(`node "$EP_KIT/tools/jira/jira-tao.js" --toi`), 'allow'],
+  ['jira-tao.js --tao (tạo thật) ⇒ hỏi', bash(`node "$EP_KIT/tools/jira/jira-tao.js" bao-cao/x/BUG-1.jira.md --tao`), 'ask'],
+  ['confluence.js tìm / lấy trang ⇒ cho', bash(`node "$EP_KIT/tools/confluence/confluence.js" trang 50709307`), 'allow'],
+  ['Đọc tệp token Confluence ⇒ chặn', read(path.join(os.homedir(), '.easypos-tester', 'confluence' + '.properties')), 'deny'],
+  ['cat tệp token Confluence ⇒ chặn', bash('cat ~/.easypos-tester/confluence' + '.properties'), 'deny'],
   ['sqlcmd trực tiếp vào CSDL dev ⇒ chặn', bash('sqlcmd -S 10.100.110.78 -d easyposbackoffice -Q "SELECT 1"'), 'deny'],
   ['dbq.js đường dẫn tuyệt đối trong bộ kit', bash(`node "${K('tools', 'tester', 'dbq.js').replace(/\\/g, '/')}" uat q.sql`), 'allow'],
   ['dbq.js PowerShell $env:EP_KIT', ps('node "$env:EP_KIT\\tools\\tester\\dbq.js" uat q.sql'), 'allow'],

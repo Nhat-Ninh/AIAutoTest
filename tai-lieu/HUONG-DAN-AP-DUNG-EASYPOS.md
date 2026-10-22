@@ -98,7 +98,7 @@ Tôi đọc code của `easyposbackend`, `easypos-frontend`, `easypos-gateway-cl
 | Môi trường UAT | Để trống địa chỉ web/API (CSDL đã điền). Làm sau khi dev ổn |
 | Địa chỉ + CSDL **prod** thật | Chưa có (repo không chứa; cần DevOps). Bộ kit vẫn an toàn nhờ chặn mọi địa chỉ khớp các tên miền/IP prod đã biết, nhưng nên bổ sung |
 | MongoDB, Redis | Bộ kit chưa đọc được → kiểm tay |
-| Confluence | Chưa có công cụ đọc → xuất trang ra PDF/Word rồi đưa đường dẫn cho Claude |
+| Confluence | ✅ Đã có `tools/confluence/confluence.js` (chỉ đọc, bằng PAT) — xem mục D10. Chưa có token thì vẫn có cách tạm: xuất PDF / Word |
 
 > Thư mục `C:\NINHHN\SOFTDREAM-PRJ\AIAUTOTEST` là **bản mẫu EasyBooks gốc** (một vài tệp đã bị sửa dở trong lúc thử). **Đừng làm việc ở đó.** Bộ kit đang dùng là **`C:\easypos-tester-kit`**.
 
@@ -266,6 +266,31 @@ Claude đi 7 bước (phạm vi → phân tích → testcase → kịch bản �
 3. Kiểm: `cd e2e` → `npx playwright test tests/_kiem-moi-truong --project=uat` (KIEM-01 mở trang) và `node "C:/easypos-tester-kit/tools/tester/dbq.js" uat <tệp.sql>`.
 
 **Chưa kiểm được ở thời điểm viết:** đăng nhập UAT (chưa có tài khoản UAT trong `tai-khoan.json`), nên chưa biết `apiUrl = https://uat.easypos.vn/api/` đã đúng cho đăng nhập API và công ty nào dùng được.
+
+### D10. Jira tự động tạo ticket và Confluence lấy nghiệp vụ (người phụ trách cấu hình một lần)
+
+**Hai công cụ mới (22/10/2026), cùng dùng `tools/lib/atlassian.js`, token PAT của **từng tester**:**
+
+| Công cụ | Việc | Tệp token của tester (ngoài repo, hook chặn Claude đọc) |
+|---|---|---|
+| `tools/jira/jira-tao.js` | Tạo ticket Bug từ nháp `BUG-n.jira.md` đã được tester duyệt; đính kèm; issue link; chống trùng; in link | `jira.properties` → `jira.token=` (PAT cần quyền **tạo issue + đính kèm** trong EPB) |
+| `tools/confluence/confluence.js` | `toi`, `space`, `tim`, `trang`, `con`, `dinh-kem`, `lien-ket` — lấy tài liệu → markdown có phiên bản | `confluence.properties` → `confluence.token=` (quyền **đọc** space EP) |
+
+**Đã kiểm trên hệ thống thật (read-only):** Jira và Confluence là bản **Server / Data Center** có PAT. Với token của người phụ trách: Jira cho phép **tạo issue, đính kèm, đổi reporter** trong EPB; Confluence đọc được 18 space (có **EP — EasyPos**, với cây *Tài liệu nghiệp vụ › QUẢN LÝ SẢN PHẨM …*). Trang nghiệp vụ của BA đã có sẵn mã **US-xx, BR-xx, NT-xx** — Claude dùng nguyên các mã này để truy vết.
+
+**Phương án người tạo đã chọn: A — PAT của chính tester** ⇒ Reporter đúng là tester, tester chỉ bấm **Assign**. (Máy chủ còn cho đổi reporter nên có thể chuyển sang phương án bot nếu cần: nháp có `reporter:`; công cụ đã hỗ trợ.)
+
+**Cấu hình project (`config/jira.json`):** `project: EPB`, `loaiPhieu: [Bug]` (chỉ tạo đúng loại này), `nhanMacDinh: [auto-test]`, `gioiHanMoiGio: 10`, `truongThem: {}` (trường bắt buộc khác — hiện **chưa cần**). Trường của EPB / Bug (đọc bằng `node tools/jira/jira-tao.js --meta`): bắt buộc **Summary, Issue Type, Reporter, Labels, Project, Severity** (Severity có mặc định; nháp ghi `severity: Major`); có thêm trường **Tester** (công cụ tự điền người chạy), Component, Priority, Environment, Affects/Fix Version, Epic Link, Sprint. Nếu EPB thêm trường bắt buộc mới, chạy `--meta` rồi điền vào `truongThem`.
+> Lưu ý kỹ thuật: bản Jira này **không còn** endpoint `createmeta` cũ (404) nên công cụ dùng endpoint mới `createmeta/{project}/issuetypes/{id}` (đã tự dự phòng cả hai).
+
+**Chốt an toàn (đã kiểm):** mặc định chỉ xem trước; `--tao` mới tạo thật **và** hook Claude Code hỏi xác nhận lần nữa; chỉ tạo mới (không sửa / đóng / xoá); từ chối project / loại phiếu ngoài `config/jira.json`; chống trùng bằng nhãn `at-<mã băm>` + JQL tìm ticket giống; quét bí mật trong mô tả và tệp văn bản đính kèm; từ chối tệp đính kèm ngoài thư mục báo cáo; từ chối nháp còn chỗ `<…>` chưa điền; giới hạn số ticket mỗi giờ; nhật ký `jira-nhat-ky.md`.
+**Đã thử:** xem trước nháp thật `BUG-1.jira.md` (tìm ra ticket giống `EPB-24095`); nháp cố tình xấu bị chặn đủ 6 lỗi (sai project, sai loại, tệp ngoài thư mục, token trong tệp, mật khẩu và Bearer trong mô tả). **Chưa thử:** **tạo ticket thật** (cần quyết định có tạo ticket thử trên EPB không — xem báo cáo cuối), **đính kèm thật** và **issue link thật** — các bước này đã viết nhưng chưa chạy.
+
+**Confluence — bộ chuyển đổi:** XHTML lưu trữ → markdown giữ tiêu đề, danh sách lồng, bảng, khối code, khung info / warning, liên kết, task, macro expand; macro Jira / sơ đồ / include để lại dấu vết; ảnh đính kèm tải bằng `--dinh-kem`. Có bộ thử `node tools/confluence/confluence.test.js` (18/18) và đã chạy trên trang thật "Tạo sản phẩm từ dữ liệu iCheck" (v67): bảng, danh sách, tiêu đề đều đúng. Kết quả lưu ở `tai-lieu-nghiep-vu/` (đã loại khỏi git).
+
+**Loại kiểm thử không cần nghiệp vụ:** Bước 0 hỏi *loại kiểm thử* — **nghiệp vụ / kỹ thuật / cả hai**. Loại **kỹ thuật** **không gọi Confluence**, testcase ghi nguồn `Code` / `KT`, kết luận ghi rõ "chưa kiểm tính đúng nghiệp vụ". Loại có nghiệp vụ mà không có tài liệu ⇒ Claude hỏi lại, **không bịa** (luật 14b trong `rules/RULES.md`).
+
+**Việc cần làm khi phát cho tester:** (1) mỗi tester tạo PAT Jira + Confluence (hướng dẫn ở `HUONG-DAN-TESTER.md` Phần 6.4); (2) tester cũ bấm lại `CAI-DAT.cmd` để có tệp mẫu `confluence.properties`; (3) tester cần quyền **tạo issue + đính kèm** trong EPB và **đọc space EP**; (4) `KIEM-TRA-MAY.cmd` có mục **8b** kiểm cả hai token.
 
 ### D9. Phát cho tester khác (khi sẵn sàng)
 > **Cập nhật 22/10/2026:** repo bộ kit đang ở GitHub (`https://github.com/Nhat-Ninh/AIAutoTest.git`) — phải **mời tester vào repo** trước. Tester clone bằng `git clone <link> C:\easypos-tester` (có đường dẫn đích để khỏi lồng thư mục), điền tài khoản, rồi bấm **`KIEM-TRA-MAY.cmd`** (và `--sau`) — công cụ này kiểm từng điều kiện và chỉ cách sửa, đã bắt được các lỗi thật gặp ở máy tester (thiếu ffmpeg / trình duyệt Playwright, công ty không thuộc tài khoản, thiếu VPN, quên lưu tài khoản). Hướng dẫn đầy đủ từ A đến Z cho tester: `HUONG-DAN-TESTER.md`.

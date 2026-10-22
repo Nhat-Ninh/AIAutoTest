@@ -30,7 +30,7 @@ const fwd = p => String(p || '').replace(/\\/g, '/');
 const KIT_F = fwd(KIT).replace(/\/+$/, '').toLowerCase();
 
 /* ---------------- mẫu nhận dạng ---------------- */
-const SECRET_NAME = '(tai-khoan(?!\\.example)[\\w.-]*\\.json|jira\\.properties|git\\.properties|git-doc-code\\.properties|password\\.json|application-prod(?!test)[\\w.-]*\\.ya?ml|bootstrap-prod(?!test)[\\w.-]*\\.ya?ml|id_rsa[\\w.-]*|\\.npmrc)';
+const SECRET_NAME = '(tai-khoan(?!\\.example)[\\w.-]*\\.json|jira\\.properties|confluence\\.properties|git\\.properties|git-doc-code\\.properties|password\\.json|application-prod(?!test)[\\w.-]*\\.ya?ml|bootstrap-prod(?!test)[\\w.-]*\\.ya?ml|id_rsa[\\w.-]*|\\.npmrc)';
 const SECRET_FILE_RE = new RegExp('^(' + SECRET_NAME.slice(1, -1) + '|\\.env(\\.[\\w.-]+)?)$', 'i');
 const SECRET_MENTION_RE = new RegExp(SECRET_NAME + '|(^|[\\s"\'=/\\\\])\\.env(\\.[\\w-]+)?(?=$|[\\s"\';|&])', 'i');
 const TEST_CRED_FILE_RE = /^(application-(dev|prodTest|staging|tls|test\w*)|bootstrap(-\w+)?)\.ya?ml$/i;
@@ -42,7 +42,7 @@ const WRITE_HTTP_RE = /(-X\s*['"]?(POST|PUT|DELETE|PATCH)\b|--request\s+['"]?(PO
 const TEAM_TOOL_HOST_RE = /(jira-sds|git-sds|confluence-sds)\.softdreams\.vn/i;
 const PROD_PROFILE_RE = /(spring\.profiles\.active\s*=\s*['"]?prod\b|SPRING_PROFILES_ACTIVE\s*=\s*['"]?prod\b|-Pprod\b|spring-boot\.run\.profiles\s*=\s*prod\b|--spring\.profiles\.active\s*=\s*prod\b)/i;
 const PROD_FLAG_RE = /\bEP_(CHO_PHEP_PROD|PROD_CHO_GHI)\b/;
-const PROTECTED_NAME_RE = /(guard-easypos(\.test)?\.js|prod-config\.js|hooks\.json|session-rules\.js|RULES\.md|moi-truong\.json|settings(\.local)?\.json|setup\.js|plugin\.json|marketplace\.json|dbq\.js|cai-dat\.ps1|cap-nhat\.ps1)/i;
+const PROTECTED_NAME_RE = /(guard-easypos(\.test)?\.js|prod-config\.js|hooks\.json|session-rules\.js|RULES\.md|moi-truong\.json|settings(\.local)?\.json|setup\.js|plugin\.json|marketplace\.json|dbq\.js|jira-tao\.js|confluence\.js|atlassian\.js|jira\.json|kiem-tra-may\.js|cai-dat\.ps1|cap-nhat\.ps1)/i;
 const SHELL_WRITE_RE = /(\bsed\s+-i|\btee\b|>>?\s*["']?[\w./\\$~-]|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b|\bRemove-Item\b|\brm\s|\bdel\s|\bmv\s|\bmove\s|\bcp\s|\bcopy\s|\bcopy-item\b|\bmove-item\b|\bgit\s+(checkout|restore|reset)\b|disableAllHooks)/i;
 const CODE_FILE_RE = /\.(ts|tsx|js|mjs|cjs|py|sh|ps1|cmd|bat|java|rb|pl)$/i;
 const SCRIPT_RUN_RE = /\b(?:python3?|py|node|bash|sh|pwsh|powershell(?:\.exe)?|ruby|perl)\b(?:\s+-[A-Za-z]+)*\s+["']?([^\s"'|;&<>]+\.(?:py|js|mjs|cjs|sh|ps1|rb|pl))["']?/gi;
@@ -71,7 +71,7 @@ const isDbq = (tok, cwd) => KIT_VAR_RE.test(tok) ? /tools[\\/]tester[\\/]dbq\.js
 function isTrustedScript(tok, cwd) {
   if (KIT_VAR_RE.test(tok)) return true;
   const r = kitRel(resolvePath(tok, cwd));
-  return !!r && /^(tools\/(tester|jira)\/[\w.-]+\.js|setup\.js|hooks\/[\w.-]+\.js)$/.test(r);
+  return !!r && /^(tools\/(tester|jira|confluence)\/[\w.-]+\.js|setup\.js|hooks\/[\w.-]+\.js)$/.test(r);
 }
 function readText(f) {
   try { if (fs.statSync(f).size > 2 * 1024 * 1024) return null; return fs.readFileSync(f, 'utf8'); } catch (e) { return null; }
@@ -154,6 +154,9 @@ function decideShell(cmd, cwd) {
 
   const cfg = prod.load();
   if (PROD_FLAG_RE.test(cmd)) return ask('Lệnh bật chạy giao diện / API vào PROD (EP_CHO_PHEP_PROD / EP_PROD_CHO_GHI). Chỉ làm khi người phụ trách đồng ý; CSDL prod vẫn không được chạm.');
+
+  // Tạo ticket Jira thật bằng công cụ của bộ kit: luôn HỎI lại (cổng duyệt thứ hai, sau khi tester đã duyệt nháp trong chat).
+  if (/jira-tao\.js/i.test(cmd) && /(^|\s)--tao(\s|$)/.test(cmd)) return ask('Lệnh TẠO ticket thật trên Jira (jira-tao.js --tao) — cả nhóm sẽ nhìn thấy. Chỉ đồng ý khi tester đã duyệt nháp trong chat (bản xem trước đã hợp lệ).');
 
   for (const seg of segments(cmd)) {
     if (DB_CLIENT_RE.test(seg) && !dbqSegment(seg, cwd)) {

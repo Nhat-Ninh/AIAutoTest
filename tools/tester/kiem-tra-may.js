@@ -156,6 +156,21 @@ function thuMucTrinhDuyet() {
     if (epKit && path.resolve(epKit).toLowerCase() !== KIT.toLowerCase()) canhBao('EP_KIT trỏ tới ' + epKit + ' nhưng bạn đang ở ' + KIT, 'Bấm CAI-DAT.cmd trong thư mục bộ kit bạn định dùng, rồi Reload Window');
   } else canhBao('Chưa cài hook bảo vệ', 'Bấm đúp CAI-DAT.cmd, rồi VS Code: Ctrl+Shift+P → Developer: Reload Window, mở cuộc trò chuyện Claude mới');
 
+  /* 8b. Jira / Confluence */
+  tieuDe('8b. Jira và Confluence (token cá nhân — tùy chọn nhưng nên có)');
+  const thuTok = (ten, tep, loai) => {
+    const r = chay('node', ['"' + path.join(KIT, 'tools', tep) + '"', loai]);
+    const out = ((r.stdout || '') + '\n' + (r.stderr || '')).split(/\r?\n/).filter(Boolean);
+    if (r.status === 0) { const dong = out.find(l => /^Đăng nhập bằng/.test(l)); ok(ten + ': token dùng được — ' + (dong || '').replace('Đăng nhập bằng: ', '').replace(/ — ticket kit tạo.*$/, '')); return true; }
+    const noi = out.join(' ');
+    if (/Chưa có token/.test(noi)) canhBao(ten + ': chưa có token', 'Tạo PAT trong ' + ten + ' (avatar → Personal Access Tokens) rồi tự gõ vào tệp token của bạn (xem HUONG-DAN-TESTER.md Phần 6.4). Không có token vẫn chạy test được, chỉ không ' + (ten === 'Jira' ? 'tự tạo được ticket' : 'lấy được tài liệu nghiệp vụ'));
+    else if (/401/.test(noi)) canhBao(ten + ': token sai / hết hạn / bị thu hồi', 'Tạo PAT mới và ghi lại vào tệp token');
+    else if (/403|quyền/.test(noi)) canhBao(ten + ': ' + out[out.length - 1].slice(0, 200), 'Nhờ admin cấp quyền, hoặc dùng token khác');
+    else canhBao(ten + ': không kết nối được — ' + (out[out.length - 1] || '').slice(0, 160), 'Kiểm VPN');
+    return false;
+  };
+  if (coPw !== undefined) { thuTok('Jira', path.join('jira', 'jira-tao.js'), '--toi'); thuTok('Confluence', path.join('confluence', 'confluence.js'), 'toi'); }
+
   /* 9. Bài kiểm đăng nhập (tùy chọn) */
   if (SAU) {
     tieuDe('9. Bài kiểm đăng nhập giao diện + API trên dev (mất ~30 giây)');
