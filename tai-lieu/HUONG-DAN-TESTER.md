@@ -46,7 +46,6 @@ Máy Windows, cần quyền cài phần mềm.
 | 2 | Extension **Claude Code** | VS Code → Extensions → gõ "Claude Code" → Install | Thấy biểu tượng Claude trong VS Code |
 | 3 | **Git** | https://git-scm.com/download/win | `git --version` ra số phiên bản |
 | 4 | **Node.js bản LTS (≥ 18)** | https://nodejs.org/en/download | `node -v` ra số phiên bản |
-| 5 | **VPN công ty** (bật mỗi khi làm việc) | Xin IT / người phụ trách | Mở được `http://10.100.110.78/` bằng trình duyệt |
 
 **Cách chạy lệnh kiểm tra:** nhấn `Windows + R`, gõ `cmd`, Enter; gõ từng lệnh rồi Enter. Cài xong Node mà báo `'node' is not recognized` → **đóng cửa sổ cmd, mở lại** (Windows chỉ nhận lệnh mới ở cửa sổ mới). Nếu vẫn lỗi trong PowerShell: `$env:Path = 'C:\Program Files\nodejs;' + $env:Path`.
 
@@ -60,7 +59,7 @@ Xin người phụ trách: (a) **link repo bộ kit** `easypos-tester-kit` trên
 
 1. Mở **cmd**, tải bộ kit về một chỗ **cố định** (đừng dời / xoá sau này):
 ```bash
-git clone <link repo easypos-tester-kit> C:\easypos-tester
+git clone <https://github.com/Nhat-Ninh/AIAutoTest> C:\easypos-tester
 ```
 (Cmd hỏi tài khoản thì dùng tài khoản Bitbucket công ty.)
 
