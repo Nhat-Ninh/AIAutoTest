@@ -1,0 +1,30 @@
+# EasyPOS tester kit — kiểm thử tự động EasyPOS cùng Claude
+
+Claude đọc code, viết testcase, viết kịch bản Playwright, chạy trên **DEV trước, UAT sau** (project `dev`, `uat`) bằng thao tác người dùng, tra CSDL (chỉ đọc) rồi viết
+báo cáo + lỗi theo mẫu Jira (`EPB-…`). Hook chặn nối CSDL trực tiếp, gọi prod và lộ mật khẩu.
+
+> **Trạng thái:** bản khung đã đổi sang EasyPOS (đã đọc `application*.yml`, gateway, frontend). Còn thiếu thông tin môi trường —
+> xem [tai-lieu/EASYPOS-BAN-DO.md](tai-lieu/EASYPOS-BAN-DO.md) mục 8 và làm theo
+> [tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md](tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md). Tester đọc [tai-lieu/HUONG-DAN-TESTER.md](tai-lieu/HUONG-DAN-TESTER.md).
+
+## Cấu trúc
+
+| Thư mục / tệp | Việc |
+|---|---|
+| `config/moi-truong.json` | Môi trường (web, API, CSDL), cách đăng nhập EasyPOS, danh sách PROD bị chặn (`prodChan`, `prodDb`) |
+| `config/tai-khoan.example.json` | Mẫu tài khoản. Tài khoản thật: `~/.easypos-tester/tai-khoan.json` (tự gõ, ngoài repo) |
+| `e2e/` | Playwright: `lib/fixtures.ts` (đăng nhập, chặn prod), `tests/` (kịch bản) |
+| `hooks/` | `guard-easypos.js` (hook chặn) + `guard-easypos.test.js` (bộ thử), `prod-config.js` (danh sách prod dùng chung), `session-rules.js` (nạp luật) |
+| `rules/RULES.md` | Luật làm việc + quy trình 7 bước |
+| `mau-bao-cao/` | Mẫu báo cáo từng bước 00 → 06 |
+| `tools/tester/` | `dbq.js` (đọc CSDL, chỉ SELECT), `bb.js` (đọc Bitbucket project EPOS), `kiem-trinh-duyet.js` |
+| `tools/jira/jira.js` | Đọc ticket Jira |
+| `tools/install/` | Bộ cài / cập nhật (`CAI-DAT.cmd`, `CAP-NHAT.cmd`, `GO-CAI-DAT.cmd`) |
+| `tai-lieu/` | Bản đồ hệ thống EasyPOS, hướng dẫn leader, hướng dẫn tester |
+
+## Dùng nhanh
+1. Cần Node.js 18+, Git, VS Code + extension Claude Code, VPN công ty.
+2. `node hooks/guard-easypos.test.js` — phải báo `N/N ca đúng`.
+3. Bấm `CAI-DAT.cmd` → mở VS Code, Reload Window, mở cuộc trò chuyện Claude **mới**.
+4. Tự gõ tài khoản vào `~/.easypos-tester/tai-khoan.json`. Không bao giờ dán mật khẩu vào chat Claude.
+5. Mỗi máy chỉ cài **một** bộ kit.

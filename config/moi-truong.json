@@ -1,0 +1,114 @@
+{
+  "_ghiChu": [
+    "Cấu hình MÔI TRƯỜNG cho bộ kit tester EasyPOS. Người phụ trách điền một lần, đẩy lên git; tester bấm CAP-NHAT.cmd là có.",
+    "THỨ TỰ KIỂM THỬ: DEV trước, đạt rồi mới sang UAT. Khoá 'dev' = môi trường dev (CSDL easyposbackoffice), khoá 'uat' = môi trường UAT (CSDL easyposuat). Cả hai cùng máy CSDL 10.100.110.78 (xác nhận 21/10/2026).",
+    "Mỗi khoá trong moiTruong là MỘT môi trường = một project Playwright (--project=<khoá>) = một tham số của dbq.js (vd dev, uat).",
+    "Tài khoản KHÔNG nằm ở đây: mỗi tester tự gõ vào ~/.easypos-tester/tai-khoan.json (mẫu: config/tai-khoan.example.json), cùng khoá môi trường.",
+    "webUrl: gốc giao diện (FE). apiUrl: gốc API, KẾT THÚC bằng '/'. FE EasyPOS gọi API cùng gốc (SERVER_API_URL = '/') và cổng gateway chuyển /api/** về các service, nên apiUrl = webUrl + 'api/'. Muốn chắc: mở web UAT → F12 → Network → đăng nhập → xem Request URL của 'authenticate'.",
+    "Môi trường để webUrl / apiUrl TRỐNG thì bộ cài bỏ qua, không kiểm.",
+    "Nguồn: easyposbackend/src/main/resources/config/application-dev.yml (dev: easyposbackoffice) và application-prodTest.yml (prodTest = UAT: easyposuat, gateway 8888, backend 9112). db.host / db.database dưới đây khớp với xác nhận của người phụ trách (dev ở trên, UAT ở dưới trong cùng máy 10.100.110.78).",
+    "dangNhap: POST /api/client/common/authenticate { username, password, companyId?, rememberMe, otp? }; phản hồi bọc trong 'data' (data.id_token, data.companies[{id,name,taxCode}]). Nhiều công ty ⇒ gửi lại kèm companyId. Tài khoản test phải TẮT OTP.",
+    "prodChan: tên miền / IP PROD. Playwright TỪ CHỐI địa chỉ khớp ở đây, trừ khi lệnh chạy có EP_CHO_PHEP_PROD=1 (hook hỏi); dbq và hook luôn từ chối. Mục: 'easypos.vn' = chính nó + mọi tên con; kết thúc dấu chấm = dải IP; có * = mẫu tên máy.",
+    "Nguồn của prodChan: application-prod.yml của gateway (CORS và route tới 10.100.110.110), easyposbackend (config server 10.100.110.16, 10.100.110.41, 10.100.110.251), các tên miền trong code FE / backend. TODO BẮT BUỘC: DevOps bổ sung máy CSDL PROD (prodDb) — repo chỉ có cấu hình prod ở config server.",
+    "khongPhaiProd: tên máy TEST / UAT lỡ khớp tên miền prod (vd testtranshub.easypos.vn): so TRÙNG nguyên tên máy, không nhận IP. Thêm tên = nới chặn ⇒ hook hỏi người dùng."
+  ],
+  "moiTruong": {
+    "dev": {
+      "ten": "DEV EasyPOS (kiểm thử trước)",
+      "webUrl": "http://10.100.110.78/",
+      "apiUrl": "http://10.100.110.78/api/",
+      "headerThem": {},
+      "db": {
+        "host": "10.100.110.78",
+        "port": 1433,
+        "database": "easyposbackoffice"
+      },
+      "dangNhap": {
+        "ui": {
+          "duongDan": "/login"
+        }
+      },
+      "phuTro": {
+        "canXacNhan": "DEV = máy 10.100.110.78 (người phụ trách xác nhận 21/10/2026). Đang dùng cổng 80 (nginx, FE + /api/ cùng gốc; ping API 200). Máy này còn cổng 8081 (nginx, bản build khác) và 8888 (gateway) cùng trả FE + API — nếu đăng nhập ở cổng 80 không đúng dữ liệu của CSDL easyposbackoffice thì thử đổi webUrl / apiUrl sang 8081 hoặc 8888. DEV có dev đang sửa code liên tục: lỗi chập chờn có thể do môi trường.",
+        "mongo": "EasyPosAsync (10.100.110.78:27017) — dbq chưa hỗ trợ MongoDB"
+      }
+    },
+    "uat": {
+      "ten": "UAT EasyPOS (profile prodTest)",
+      "webUrl": "",
+      "apiUrl": "",
+      "headerThem": {},
+      "db": {
+        "host": "10.100.110.78",
+        "port": 1433,
+        "database": "easyposuat"
+      },
+      "dangNhap": {
+        "ui": {
+          "duongDan": "/login"
+        }
+      },
+      "phuTro": {
+        "canXacNhan": "Điền webUrl / apiUrl của UAT (hỏi DevOps). Gợi ý từ cấu hình: gateway cổng 8888, backend cổng 9112, Kafka / CORS 10.100.140.43.",
+        "mongo": "easypos_async_83 (10.100.110.78:27017) — dbq chưa hỗ trợ MongoDB",
+        "csdlKhac": "easyposbackofficenew (report, ecommerce) cùng máy 10.100.110.78"
+      }
+    }
+  },
+  "dangNhap": {
+    "_ghiChu": "api: gọi thẳng backend lấy token — đường dẫn TƯƠNG ĐỐI với apiUrl. ui: ô nhập trên màn hình đăng nhập (bộ chọn CSS). Sai thì sửa ở đây, không phải sửa kịch bản.",
+    "api": {
+      "duongDan": "client/common/authenticate",
+      "truongTen": "username",
+      "truongMatKhau": "password",
+      "truongToken": "id_token",
+      "themVaoThan": {
+        "rememberMe": false
+      },
+      "truongDsCongTy": "companies",
+      "truongOrg": "companyId",
+      "congTy": "0105987432-994"
+    },
+    "ui": {
+      "duongDan": "/login",
+      "oTen": "input[name=username]",
+      "oMatKhau": "input[name=password]",
+      "nutDangNhap": "button[type=submit]",
+      "sauDangNhap": ""
+    }
+  },
+  "prodChan": [
+    "easypos.vn",
+    "easyposs.vn",
+    "id.easyca.vn",
+    "notify.easyca.vn",
+    "admin.softdreams.vn",
+    "10.100.110.16",
+    "10.100.110.110",
+    "10.100.110.41",
+    "10.100.110.251",
+    "10.100.110.40",
+    "10.100.110.43",
+    "10.100.110.44",
+    "10.100.110.45",
+    "10.100.110.46",
+    "10.100.110.60",
+    "10.100.110.79",
+    "10.100.110.82"
+  ],
+  "khongPhaiProd": [
+    "testtranshub.easypos.vn"
+  ],
+  "prodDb": {
+    "_ghiChu": "TODO DevOps: máy / tên máy / CSDL / tài khoản CSDL PROD của EasyPOS (config server 10.100.110.16 giữ cấu hình thật). Danh sách này chỉ được NỚI RỘNG. Hiện chỉ có các máy chủ prod đã biết từ application-prod.yml.",
+    "hosts": [
+      "10.100.110.16",
+      "10.100.110.110",
+      "10.100.110.41",
+      "10.100.110.251"
+    ],
+    "hostnames": [],
+    "databases": [],
+    "logins": []
+  }
+}

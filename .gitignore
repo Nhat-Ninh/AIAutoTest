@@ -1,0 +1,20 @@
+# Tài khoản / mật khẩu — không bao giờ lên git (mỗi tester tự gõ vào ~/.easypos-tester/tai-khoan.json)
+config/tai-khoan.json
+config/jira.properties
+config/git.properties
+**/tai-khoan.json
+!config/tai-khoan.example.json
+*password*
+.env
+.env.*
+
+# Kết quả chạy (có thể chứa dữ liệu thật của bản sao UAT, ảnh màn hình, video)
+bao-cao/
+*.log
+*.tsv
+.idea/
+.vscode/
+e2e/node_modules/
+e2e/package-lock.json
+e2e/test-results/
+e2e/playwright-report/

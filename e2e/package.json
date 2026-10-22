@@ -1,0 +1,14 @@
+{
+  "name": "easypos-tester-e2e",
+  "private": true,
+  "description": "Kịch bản test BE (API) + FE (giao diện) cho môi trường TEST / UAT của EasyPOS — chạy bằng Playwright",
+  "scripts": {
+    "test:dev": "playwright test --project=dev",
+    "test:uat": "playwright test --project=uat",
+    "bao-cao": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0",
+    "mssql": "11.0.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "_ghiChu": "MẪU. Chép thành C:\\Users\\<bạn>\\.easypos-tester\\tai-khoan.json (CAI-DAT.cmd tự chép nếu chưa có) rồi TỰ GÕ vào bằng VS Code. KHÔNG dán mật khẩu vào chat với Claude. Khoá (dev, uat…) trùng khoá môi trường trong config/moi-truong.json. Test DEV trước, UAT sau — điền cả hai. web = tài khoản đăng nhập EasyPOS dữ liệu GIẢ, TẮT OTP; db = tài khoản CSDL TEST / UAT chỉ-đọc, ưu tiên chỉ-đọc; dev / UAT chưa có thì dùng tài khoản sa của ứng dụng (dbq chỉ chạy SELECT, từ chối máy prod). Không có tài khoản prod.",
+  "dev": {
+    "web": { "user": "", "password": "" },
+    "db":  { "user": "", "password": "" }
+  },
+  "uat": {
+    "web": { "user": "", "password": "" },
+    "db":  { "user": "", "password": "" }
+  }
+}

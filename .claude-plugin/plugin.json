@@ -1,0 +1,6 @@
+{
+  "name": "easypos-tester-kit",
+  "version": "0.1.0",
+  "description": "Bộ kit kiểm thử tự động EasyPOS cùng Claude: Playwright (giao diện + API), tra CSDL chỉ-đọc, hook chặn ghi prod / lộ mật khẩu.",
+  "author": { "name": "Softdreams EasyPOS" }
+}

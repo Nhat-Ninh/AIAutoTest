@@ -1,0 +1,17 @@
+{
+  "name": "easypos-tester-kit",
+  "owner": {
+    "name": "Softdreams EasyPOS"
+  },
+  "plugins": [
+    {
+      "name": "easypos-tester-kit",
+      "source": "./",
+      "description": "Hook chặn ghi prod, luật kiểm thử, Playwright e2e cho EasyPOS."
+    }
+  ],
+  "metadata": {
+    "description": "Bộ kit kiểm thử tự động EasyPOS cùng Claude: Playwright (UI + API), tra CSDL chỉ-đọc (dbq), đọc code Bitbucket (bb), đọc Jira (jira), hook chặn ghi prod / lộ mật khẩu.",
+    "version": "0.1.0"
+  }
+}
