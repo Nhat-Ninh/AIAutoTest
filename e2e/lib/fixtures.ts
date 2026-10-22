@@ -6,7 +6,7 @@
  * Kịch bản viết:  import { test, expect } from '../../lib/fixtures';
  * Tên test bắt đầu bằng MÃ TESTCASE để báo cáo đối chiếu được:  test('[TC-API-001] Tạo hoá đơn hợp lệ', …) */
 import { test as base, expect, APIRequestContext } from '@playwright/test';
-import { choGhiProd, choPhepProd, dangNhap, Env, kiemUrl, laMoiTruongProd, laProd, moiTruong, taiKhoan, thieuTaiKhoan } from './moi-truong';
+import { choGhiProd, choPhepProd, dangNhap, Env, kiemUrl, laMoiTruongProd, laProd, moiTruong, rieng, taiKhoan, thieuTaiKhoan } from './moi-truong';
 
 /* Trên prod (khi chưa bật EP_PROD_CHO_GHI=1): mọi lời gọi ghi qua fixture `api` bị từ chối trước khi gửi. */
 function chiDoc(ctx: APIRequestContext, env: Env): APIRequestContext {
@@ -79,8 +79,14 @@ export const test = base.extend<Fx>({
     let body = await res.json();
     body = body?.data ?? body;   // EasyPOS bọc kết quả trong "data" (data.id_token, data.companies)
     if (!body[dn.truongToken] && dn.truongDsCongTy && body[dn.truongDsCongTy]) {
-      const org = chonOrg(body[dn.truongDsCongTy], dn.congTy);
-      expect(org, `Đăng nhập API ${env}: tài khoản không có công ty${dn.congTy ? ' khớp "' + dn.congTy + '"' : ''}`).toBeTruthy();
+      // Công ty muốn vào: biến môi trường EP_CONGTY_<ENV> (vd EP_CONGTY_DEV) > ~/.easypos-tester/tester.json → "congTy": { "dev": "…" } > config/moi-truong.json.
+      const congTy = process.env['EP_CONGTY_' + String(env).toUpperCase()] || (rieng as any)?.congTy?.[env] || dn.congTy;
+      const dsCty: any[] = body[dn.truongDsCongTy] || [];
+      const org = chonOrg(dsCty, congTy);
+      const coSan = dsCty.map(c => `${c?.id} = ${c?.name}`).slice(0, 15).join(' | ') + (dsCty.length > 15 ? ` … (+${dsCty.length - 15} công ty nữa)` : '');
+      expect(org, `Đăng nhập API ${env}: tài khoản này KHÔNG thuộc công ty "${congTy}" (cấu hình trong config/moi-truong.json). ` +
+        `Công ty tài khoản có: ${coSan || '(không có)'}. Cách xử lý: đặt công ty của bạn trong ~/.easypos-tester/tester.json → "congTy": { "${env}": "<id>" } ` +
+        `hoặc chạy với biến EP_CONGTY_${String(env).toUpperCase()}=<id>.`).toBeTruthy();
       res = await tam.post(duongDan, { data: { ...than, [dn.truongOrg || 'org']: org } });
       expect(res.ok(), `Đăng nhập API ${env} bước chọn công ty lỗi HTTP ${res.status()}`).toBeTruthy();
       body = await res.json();

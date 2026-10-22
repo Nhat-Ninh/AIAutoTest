@@ -160,6 +160,8 @@ npx playwright test tests/_kiem-moi-truong --project=dev
 
 (`skipped` = thiếu tài khoản trong `tai-khoan.json`; quay lại Phần 4.)
 
+> **Hay gặp ở máy tester mới:** KIEM-01 đạt nhưng KIEM-02 / KIEM-03 **lỗi "tài khoản này KHÔNG thuộc công ty …"**. Nguyên nhân: bộ kit đặt sẵn công ty test của dev là `9839` ("Cửa hàng test Imei"), mà tài khoản của bạn có thể không thuộc công ty đó. Đọc thông báo lỗi — nó liệt kê các công ty bạn có — rồi chọn một công ty và khai trong `~\.easypos-tester\tester.json`: `{ "congTy": { "dev": "<id>" } }`. Đọc thêm ở bảng lỗi (Phần 11). Nếu lỗi khác, **chép nguyên văn thông báo đỏ** gửi người phụ trách.
+
 **Lớp 3 — Đọc CSDL:** tạo tệp `C:\easypos-tester\kiem.sql` chứa đúng một dòng:
 ```sql
 SELECT @@SERVERNAME AS may, DB_NAME() AS csdl
@@ -295,6 +297,11 @@ Claude soạn **nháp** từng lỗi trong `06-tong-ket.md` (hoặc tệp `BUG-<
 | `git clone` hỏi mật khẩu / 403 | Chưa có quyền repo / quên VPN | Bật VPN; xin quyền; đăng nhập đúng tài khoản Bitbucket |
 | KIEM-01 lỗi (không mở được trang) | Quên VPN / sai `webUrl` | Bật VPN; mở thử `http://10.100.110.78/` |
 | Test báo `skipped` hàng loạt | Thiếu tài khoản, **hoặc** tài khoản thiếu quyền (ví dụ quyền mở ca) | Xem lý do trong báo cáo (⏸ lỗi môi trường); điền tài khoản / xin cấp quyền |
+| KIEM-02 / KIEM-03 lỗi: **"tài khoản này KHÔNG thuộc công ty …"** | Công ty trong `config\moi-truong.json` (dev: `9839` "Cửa hàng test Imei") **không nằm trong danh sách công ty của tài khoản của bạn** | Thông báo lỗi liệt kê sẵn các công ty tài khoản bạn có (`id = tên`). Chọn một công ty rồi tạo / sửa `C:\Users\<bạn>\.easypos-tester\tester.json`: `{ "congTy": { "dev": "<id>" } }` (hoặc chạy tạm: `$env:EP_CONGTY_DEV='<id>'`). Cần bản kit mới (`CAP-NHAT.cmd`) |
+| `npx` / `npm` báo *"running scripts is disabled on this system"* (PowerShell) | PowerShell chặn tệp `.ps1` trên máy mới | Chạy trong **cmd** thay vì PowerShell, hoặc gõ `npx.cmd playwright test …`, hoặc (một lần) `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| `Cannot find module '@playwright/test'` | Chưa cài thư viện test trong `e2e` | `cd e2e` → `npm install` (hoặc bấm lại `CAI-DAT.cmd`) |
+| `Executable doesn't exist … chromium` | Chưa tải trình duyệt kiểm thử | `cd e2e` → `npx playwright install chromium` |
+| `No tests found` / `Error: no project` | Chạy sai thư mục / sai tên môi trường | Phải đứng trong `e2e` và dùng `--project=dev` (hoặc `uat`) |
 | `Chua co tai khoan CSDL…` (dbq) | Thiếu `db.user / password` hoặc **chưa lưu tệp** | Phần 4; nhớ Ctrl+S |
 | `Login failed for user` (dbq) | Sai mật khẩu CSDL | Sửa `db` trong tai-khoan.json. **Đừng thử lại liên tục** (có thể bị khoá) |
 | `TU CHOI: dbq chi chay cau DOC` | Câu SQL có từ khoá ghi (INSERT, UPDATE, DELETE, EXEC…) | Chỉ dùng `SELECT` |
