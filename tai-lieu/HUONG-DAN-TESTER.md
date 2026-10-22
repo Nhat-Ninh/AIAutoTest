@@ -386,7 +386,7 @@ Sau khi bạn chốt báo cáo (Bước 6), với **mỗi lỗi thật** (❌; k
 
 #### B. Cách dự phòng: bạn tạo tay (không có token / công cụ lỗi)
 1. Bật VPN, mở `https://jira-sds.softdreams.vn:8080/`, đăng nhập. **Create** → Project **EPB**, Issue Type **Bug**.
-2. Điền Summary, Priority, Severity, **Component** (vd *Sản phẩm*), Environment, Labels (`auto-test`, `dev`, tên chức năng).
+2. Điền Summary, Priority, Severity, Environment, Labels (`auto-test`, `dev`, tên chức năng).
 3. Dán Description từ nháp (phần sau dòng `---` thứ hai của `BUG-n.jira.md`). Ô có hai tab **Visual / Text** → chuyển sang **Text** (viết bằng định dạng wiki của Jira Server); bấm Preview kiểm tra.
 4. Đính kèm ảnh bằng chứng (**mở xem trước, không chứa mật khẩu / token**), thêm issue link nếu có, **Create**, gửi mã `EPB-…` cho Claude.
 

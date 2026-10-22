@@ -7,7 +7,7 @@ ma-loi: BUG-1                     # mã lỗi trong báo cáo; cùng ma-loi + m�
 summary: [<Chức năng>] <Mô tả ngắn lỗi — hiện tượng, không đoán nguyên nhân>
 priority: Medium                  # Highest | High | Medium | Low | Lowest (hoặc: Cao / Trung bình / Thấp)
 severity: Major                   # Blocker | Critical | Major | Low  (Trường Severity của EPB)
-components: [<Tên component>]     # ví dụ Sản phẩm
+# components: [<Tên component>]    # CHỈ dùng khi project có component; EPB hiện KHÔNG có (công cụ sẽ báo lỗi nếu ghi sai)
 labels: [dev, <ten-chuc-nang>]    # 'auto-test' và 'at-<mã băm>' được công cụ tự thêm
 environment: dev — http://10.100.140.9:8082/, CSDL easyposbackoffice, công ty <id — tên>
 lien-ket: []                      # ticket liên quan: [EPB-123] hoặc [Relates:EPB-123, Blocks:EPB-456]

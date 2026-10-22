@@ -198,7 +198,18 @@ async function main() {
   // Trường "Tester" (nếu project có, kiểu danh sách người): mặc định là chính người chạy kit; nháp có thể ghi tester: <tên đăng nhập>.
   const idTester = idTheoTen('Tester');
   if (idTester && meta[idTester].schema && meta[idTester].schema.items === 'user') { const ai = dau.tester || me.name; fields[idTester] = [{ name: ai }]; xem.push('Tester: ' + ai); }
-  if (dau.components) dat('components', listDe(dau.components), 'Component');
+  if (dau.components) {
+    // Danh sách component THẬT của project (createmeta không trả giá trị cho phép của trường này). Project không có component ⇒ báo ngay, đừng để Jira từ chối lúc tạo.
+    let dsCp = null;
+    try { dsCp = await A.json('jira', 'GET', '/rest/api/2/project/' + DU_AN + '/components'); } catch (e) { luuY('Không đọc được danh sách component: ' + e.message); }
+    if (dsCp && !dsCp.length) hong('Project ' + DU_AN + ' KHÔNG có component nào — bỏ dòng components: khỏi nháp (hoặc nhờ admin tạo component).');
+    else if (dsCp) {
+      const ghep = listDe(dau.components).map(c => khop(c, dsCp));
+      const thieuC = listDe(dau.components).filter((c, i) => !ghep[i]);
+      if (thieuC.length) hong('Component "' + thieuC.join(', ') + '" không tồn tại trong ' + DU_AN + '. Có: ' + dsCp.map(c => c.name).slice(0, 15).join(' | '));
+      else { fields.components = ghep.map(c => ({ name: c.name })); xem.push('Component: ' + ghep.map(c => c.name).join(', ')); }
+    } else dat('components', listDe(dau.components), 'Component');
+  }
   if (dau['affects-version']) dat('versions', listDe(dau['affects-version']), 'Affects Version');
   if (dau.environment) { if (meta.environment) { fields.environment = dau.environment; xem.push('Môi trường: ' + dau.environment); } else luuY('Project không có trường Environment — thêm vào mô tả.'); }
   if (dau.assignee) { fields.assignee = { name: dau.assignee }; xem.push('Assignee: ' + dau.assignee); }
