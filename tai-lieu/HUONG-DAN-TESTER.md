@@ -1,6 +1,6 @@
-# Hướng dẫn sử dụng bộ AI Auto Test EasyPOS — dành cho tester mới (A → Z, thiết kế để ít lỗi nhất)
+# Hướng dẫn sử dụng bộ AI Auto Test EasyPOS — dành cho tester mới (Mọi thắc mắc liên hệ NinhHN)
 
-> Cập nhật 22/10/2026. Viết cho người **chưa từng làm auto test**.
+> Cập nhật 22/10/2026.
 > **Cách dùng tài liệu này:** làm lần lượt Phần 1 → 13. Cứ **sau mỗi giai đoạn lớn có một "CỔNG KIỂM"** — chưa qua cổng thì **đừng sang bước sau**. Phần lớn lỗi của người mới đều là do bỏ qua một điều kiện ở đầu; cổng kiểm bắt lỗi đó sớm.
 > **Công cụ cứu hộ quan trọng nhất: bấm đúp `KIEM-TRA-MAY.cmd`.** Nó kiểm từng điều kiện (cài đặt, VPN, tài khoản, CSDL, trình duyệt, hook) và chỉ chính xác cách sửa chỗ chưa đạt.
 > Tài liệu cho người phụ trách bộ kit: `HUONG-DAN-AP-DUNG-EASYPOS.md`. Hệ thống EasyPOS: `EASYPOS-BAN-DO.md`.
