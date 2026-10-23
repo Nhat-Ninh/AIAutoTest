@@ -11,7 +11,10 @@
  *     script được chạy hoặc tệp code được ghi (kịch bản e2e không được tự nối CSDL). Chỉ dbq.js được nối CSDL.
  *   - gọi HTTP / ssh tới máy PROD (config/moi-truong.json → prodChan, prodDb).
  *   - chạy ứng dụng với profile prod.
+ *   - CỔNG CẬP NHẬT: lệnh chạy bộ test (playwright test / npm test) chỉ được qua khi kit đã mới theo nhánh main (tools/tester/dong-bo.js kiem,
+ *     tự kéo main về nếu cũ; chặn nếu không kéo được và đã quá hạn ngoại tuyến, hoặc cần cài thêm sau cập nhật, hoặc cập nhật đáng ngờ).
  * HỎI (ask):
+ *   - EP_BO_QUA_DONG_BO (tắt cổng cập nhật) · dong-bo.js gui (gửi bài học lên kho chung) · dong-bo.js --chap-nhan-sao-luu (ghi đè kit sau sao lưu) · git ghi tay.
  *   - EP_CHO_PHEP_PROD=1 / EP_PROD_CHO_GHI=1 (chạy giao diện / API vào prod).
  *   - ghi (POST / PUT / DELETE) tới Jira / Bitbucket / Confluence bằng curl / script.
  *   - sửa hook, luật, công cụ, cấu hình môi trường, setup, settings của Claude.
@@ -22,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawnSync } = require('child_process');
 const prod = require('./prod-config.js');
 
 const KIT = prod.KIT;
@@ -42,7 +46,20 @@ const WRITE_HTTP_RE = /(-X\s*['"]?(POST|PUT|DELETE|PATCH)\b|--request\s+['"]?(PO
 const TEAM_TOOL_HOST_RE = /(jira-sds|git-sds|confluence-sds)\.softdreams\.vn/i;
 const PROD_PROFILE_RE = /(spring\.profiles\.active\s*=\s*['"]?prod\b|SPRING_PROFILES_ACTIVE\s*=\s*['"]?prod\b|-Pprod\b|spring-boot\.run\.profiles\s*=\s*prod\b|--spring\.profiles\.active\s*=\s*prod\b)/i;
 const PROD_FLAG_RE = /\bEP_(CHO_PHEP_PROD|PROD_CHO_GHI)\b/;
-const PROTECTED_NAME_RE = /(guard-easypos(\.test)?\.js|prod-config\.js|hooks\.json|session-rules\.js|RULES\.md|moi-truong\.json|settings(\.local)?\.json|setup\.js|plugin\.json|marketplace\.json|dbq\.js|jira-tao\.js|confluence\.js|atlassian\.js|jira\.json|kiem-tra-may\.js|cai-dat\.ps1|cap-nhat\.ps1)/i;
+// Đồng bộ kit tự động (tools/tester/dong-bo.js): chặn đường vòng. Bỏ qua cổng cập nhật, git ghi tay, gửi bài / ghi đè kit đều phải được hỏi.
+const BO_QUA_DONG_BO_RE = /\bEP_BO_QUA_DONG_BO\b/;
+const GIT_GHI_RE = /\bgit(\.exe)?\s+(-\S+\s+(\S+\s+)?)*(commit|push|merge|rebase|reset|clean|cherry-pick|am|revert|stash|tag|pull|restore|checkout\s+(-f|--force)|branch\s+-[dD]|update-ref|gc|worktree\s+remove)\b/i;
+// Lệnh chạy bộ test: trước khi cho chạy phải kiểm kit đã mới (cổng đồng bộ ở cuối tệp này). --list chỉ liệt kê, không chạy.
+const CHAY_TEST_RE = /\b(playwright(@[\w.-]+)?(\.cmd)?\s+test|node\s+\S*playwright\S*[\\/]cli\.js\s+test|npm(\.cmd)?\s+(run\s+)?test(:\w+)?)\b/i;
+// Chỉ áp cổng cho bộ test CỦA KIT: thư mục làm việc nằm trong kit, hoặc lệnh nhắc tới đường dẫn kit / EP_KIT. Chạy `npm test` ở dự án khác (vd easypos-frontend) không bị vướng.
+const canDongBo = (cmd, cwd) => {
+  const c = String(cmd || '');
+  // Tách theo ; & | để `--list` ở một lệnh con không miễn cổng cho lệnh con khác (vd `npx playwright test; npx playwright test --list`).
+  if (!c.split(/[;&|\n]+/).some(s => CHAY_TEST_RE.test(s) && !/\s--list\b/.test(s))) return false;
+  const trongKit = (p) => { const f = fwd(p).toLowerCase(); return f === KIT_F || f.startsWith(KIT_F + '/'); };
+  return trongKit(cwd || '') || fwd(c).toLowerCase().includes(KIT_F) || /\$EP_KIT|%EP_KIT%|\$env:EP_KIT/i.test(c) || /easypos-tester/i.test(c);
+};
+const PROTECTED_NAME_RE = /(guard-easypos(\.test)?\.js|prod-config\.js|hooks\.json|session-rules\.js|RULES\.md|moi-truong\.json|settings(\.local)?\.json|setup\.js|plugin\.json|marketplace\.json|dbq\.js|bai-hoc\.js|bai-hoc-lib\.js|bi-mat\.js|dong-bo\.js|dong-bo\.json|nhan-bai-hoc\.(js|yml)|toan-cuc\.ts|QUY-TRINH\.md|jira-tao\.js|confluence\.js|atlassian\.js|jira\.json|kiem-tra-may\.js|cai-dat\.ps1|cap-nhat\.ps1)/i;
 const SHELL_WRITE_RE = /(\bsed\s+-i|\btee\b|>>?\s*["']?[\w./\\$~-]|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b|\bRemove-Item\b|\brm\s|\bdel\s|\bmv\s|\bmove\s|\bcp\s|\bcopy\s|\bcopy-item\b|\bmove-item\b|\bgit\s+(checkout|restore|reset)\b|disableAllHooks)/i;
 const CODE_FILE_RE = /\.(ts|tsx|js|mjs|cjs|py|sh|ps1|cmd|bat|java|rb|pl)$/i;
 const SCRIPT_RUN_RE = /\b(?:python3?|py|node|bash|sh|pwsh|powershell(?:\.exe)?|ruby|perl)\b(?:\s+-[A-Za-z]+)*\s+["']?([^\s"'|;&<>]+\.(?:py|js|mjs|cjs|sh|ps1|rb|pl))["']?/gi;
@@ -155,8 +172,16 @@ function decideShell(cmd, cwd) {
   const cfg = prod.load();
   if (PROD_FLAG_RE.test(cmd)) return ask('Lệnh bật chạy giao diện / API vào PROD (EP_CHO_PHEP_PROD / EP_PROD_CHO_GHI). Chỉ làm khi người phụ trách đồng ý; CSDL prod vẫn không được chạm.');
 
+  if (BO_QUA_DONG_BO_RE.test(cmd)) return ask('Lệnh TẮT cổng "kit phải mới" (EP_BO_QUA_DONG_BO). Bạn có thể đang chạy mã kit cũ / thiếu bản vá an toàn. Chỉ làm khi người phụ trách đồng ý (vd mất mạng khẩn cấp).');
+  if (/dong-bo\.js/i.test(cmd) && /(^|[\s"'])gui([\s"']|$)/.test(cmd) && !/--xem\b/.test(cmd)) return ask('Lệnh GỬI bài học lên kho chung của cả nhóm (dong-bo.js gui) — bài sẽ được máy chủ kiểm lại rồi gộp vào main. Chỉ đồng ý khi tester đã duyệt nháp bài học trong chat.');
+  if (/dong-bo\.js/i.test(cmd) && /--chap-nhan-sao-luu\b/.test(cmd)) return ask('Lệnh ĐƯA kit về đúng main bằng cách ghi đè thay đổi cục bộ (có sao lưu trước). Chỉ đồng ý khi bạn không có công việc dở trong thư mục kit.');
+  if (GIT_GHI_RE.test(cmd)) return ask('Lệnh git GHI / đổi trạng thái kho (commit, push, pull, reset, merge…). Bộ kit tự đồng bộ bằng tools/tester/dong-bo.js — tester không cần dùng git; Claude không commit / push nhánh của dự án. Chỉ người phụ trách mới nên đồng ý.');
+
   // Tạo ticket Jira thật bằng công cụ của bộ kit: luôn HỎI lại (cổng duyệt thứ hai, sau khi tester đã duyệt nháp trong chat).
   if (/jira-tao\.js/i.test(cmd) && /(^|\s)--tao(\s|$)/.test(cmd)) return ask('Lệnh TẠO ticket thật trên Jira (jira-tao.js --tao) — cả nhóm sẽ nhìn thấy. Chỉ đồng ý khi tester đã duyệt nháp trong chat (bản xem trước đã hợp lệ).');
+
+  // Ghi bài học vào kho chung (kien-thuc/, nằm trong git): HỎI lại — cổng duyệt thứ hai sau khi tester đã duyệt nháp bài học trong chat.
+  if (/bai-hoc\.js/i.test(cmd) && /(^|\s)them(\s|$)/.test(cmd) && /(^|\s)--ghi(\s|$)/.test(cmd)) return ask('Lệnh GHI bài học vào kho chung kien-thuc/ (bai-hoc.js them --ghi) — sẽ vào git và cả nhóm dùng. Chỉ đồng ý khi tester đã duyệt nháp bài học trong chat (bản xem trước đã hợp lệ).');
 
   for (const seg of segments(cmd)) {
     if (DB_CLIENT_RE.test(seg) && !dbqSegment(seg, cwd)) {
@@ -185,6 +210,20 @@ function decide(input) {
   return null;
 }
 
+/* Cổng cập nhật kit: chạy tools/tester/dong-bo.js kiem --nhanh (kéo main về nếu cũ). Trả null = cho qua; ngược lại là quyết định chặn.
+ * Đặt EP_GUARD_KHONG_DONG_BO=1 chỉ dành cho bộ thử của hook (không có ở máy tester). */
+function congDongBo() {
+  const tool = path.join(KIT, 'tools', 'tester', 'dong-bo.js');
+  if (process.env.EP_GUARD_KHONG_DONG_BO || !fs.existsSync(tool)) return null;
+  const r = spawnSync(process.execPath, [tool, 'kiem', '--nhanh', '--yen-lang'], { encoding: 'utf8', timeout: 55000, windowsHide: true });
+  if (r.status === 0) return null;
+  const noi = (String(r.stderr || '') + '\n' + String(r.stdout || '')).trim().split('\n').slice(-6).join(' ').slice(0, 700);
+  const huong = r.status === 10 ? ' → chạy MỘT lần: node "' + KIT_F + '/tools/tester/dong-bo.js" cap-nhat (1–2 phút) rồi chạy lại test.'
+    : r.status === 11 ? ' → kiểm mạng / đăng nhập GitHub (git fetch một lần trong thư mục kit), rồi chạy lại.'
+    : r.status === 12 ? ' → KHÔNG tự xử lý: báo người phụ trách kit.' : ' → chạy: node "' + KIT_F + '/tools/tester/dong-bo.js" trang-thai và báo người phụ trách nếu vẫn lỗi.';
+  return deny('CỔNG CẬP NHẬT KIT — không cho chạy test vì kit chưa mới / chưa an toàn: ' + (r.error ? 'đồng bộ quá lâu hoặc lỗi (' + r.error.message + ')' : noi) + huong);
+}
+
 function maskSecrets(s) {
   return String(s || '').replace(/((password|passwd|token|secret|pwd)\s*[=:]\s*)\S+/gi, '$1***');
 }
@@ -208,6 +247,7 @@ if (require.main === module) {
     let res = null;
     try {
       res = decide(input);
+      if (!res && (input.tool_name === 'Bash' || input.tool_name === 'PowerShell') && canDongBo(String((input.tool_input && input.tool_input.command) || ''), input.cwd)) res = congDongBo();
     } catch (e) {
       // Lỗi trong hook: lệnh có dấu hiệu chạm mật khẩu / CSDL / prod ⇒ chặn (đóng khi không chắc); còn lại cho qua.
       const c = JSON.stringify(input.tool_input || {});
@@ -221,4 +261,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { decide };
+module.exports = { decide, canDongBo, congDongBo };

@@ -4,7 +4,7 @@
 import { test, expect } from '../../lib/fixtures';
 import { dangNhap, kiemUrl, laMoiTruongProd, moiTruong, taiKhoan } from '../../lib/moi-truong';
 
-test.describe('giao diện đăng nhập', () => {
+test.describe('giao diện đăng nhập', { tag: ['@smoke', '@ui', '@regression'] }, () => {
   test.skip(({ env }) => !moiTruong(env).webUrl, 'Chưa điền webUrl cho môi trường này');
 
   test('[TC-FE-001] Mở trang đăng nhập thấy ô tên, ô mật khẩu, nút đăng nhập', async ({ page, env }) => {
@@ -36,7 +36,7 @@ test.describe('giao diện đăng nhập', () => {
   });
 });
 
-test.describe('API đăng nhập', () => {
+test.describe('API đăng nhập', { tag: ['@smoke', '@api', '@regression'] }, () => {
   test.skip(({ env }) => !(moiTruong(env).apiUrl || moiTruong(env).webUrl), 'Chưa điền apiUrl / webUrl cho môi trường này');
 
   test('[TC-BE-001] Sai tài khoản thì không trả id_token', async ({ playwright, env }) => {

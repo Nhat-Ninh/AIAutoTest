@@ -137,6 +137,13 @@ if (GLOBAL) {
     if (fs.existsSync(sp)) backup(sp);
     fs.writeFileSync(sp, JSON.stringify(s, null, 2) + '\n');
   }
+  // Vai trò máy cho đồng bộ tự động (tools/tester/dong-bo.js): máy tester được TỰ đưa kit về đúng origin/main (sau khi sao lưu) để không bao giờ conflict.
+  // Đã có dấu (vd người phụ trách đặt "phu-trach" bằng `node tools/tester/dong-bo.js dat-vai-tro phu-trach`) thì GIỮ NGUYÊN — không bao giờ ghi đè dấu có sẵn.
+  const dauVaiTro = path.join(CFG, 'dong-bo-che-do.json');
+  if (!fs.existsSync(dauVaiTro)) {
+    step('đặt vai trò máy = tester (kit tự đồng bộ với main) → ' + dauVaiTro);
+    if (!DRY) { fs.mkdirSync(CFG, { recursive: true }); fs.writeFileSync(dauVaiTro, JSON.stringify({ vaiTro: 'tester' }, null, 1) + '\n'); }
+  }
 }
 
 // 3. Bộ thử hook (không chạy lệnh thật nào)

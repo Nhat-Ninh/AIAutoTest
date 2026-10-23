@@ -35,6 +35,7 @@ Bạn nói với Claude: *"Kiểm thử chức năng Tạo sản phẩm trên de
 | **`KIEM-TRA-MAY.cmd`** | Bác sĩ máy: kiểm điều kiện, chỉ cách sửa | Dùng ở Phần 5, 7 và khi gặp lỗi |
 | **`confluence.js`** | Lấy **tài liệu nghiệp vụ** từ Confluence (chỉ đọc) cho Claude làm nguồn viết testcase | Cần token Confluence (Phần 6.4); loại kiểm thử "kỹ thuật" **không cần** |
 | **`jira-tao.js`** | **Tạo ticket lỗi trên Jira** từ nháp bạn đã duyệt, đính kèm ảnh, rồi đưa link | Cần token Jira (Phần 6.4); bạn chỉ mở link và bấm **Assign** |
+| **Kho bài học chung** (`kien-thuc\` + `bai-hoc.js`) | **Trí nhớ chung của cả nhóm**: bẫy đã gặp, sự thật về môi trường, lỗi đã biết. Claude tra kho trước khi làm và đề xuất bài mới sau khi làm ⇒ kit **càng test càng khôn** | Phần 8.4 — bạn duyệt bài học mới ở Bước 6c |
 | **Cấu hình** (`config\moi-truong.json`) | Địa chỉ môi trường, cách đăng nhập | Người phụ trách giữ — **bạn không sửa** |
 | **Tệp tài khoản** | Tài khoản của **riêng bạn** | Bạn tự điền (Phần 6) |
 
@@ -259,6 +260,8 @@ git ls-remote https://git-sds.softdreams.vn:7990/scm/epos/easypos-gateway-cloud.
 | 8. Hook | Đã cài hook, `EP_KIT` đúng thư mục | `CAI-DAT.cmd` → Reload Window |
 | 8b. Jira / Confluence | Token dùng được, có quyền tạo ticket | Tạo / ghi lại token (Phần 6.4). Chỉ là cảnh báo `[!]`, không chặn |
 | 8c. Bitbucket | `bb.js repo` đọc được danh sách repo EPOS | Đăng nhập Git một lần (Phần 6.5); xin quyền đọc EPOS. Chỉ là cảnh báo `[!]`, không chặn |
+| 8d. Kho bài học | `bai-hoc.js kiem`: định dạng, bằng chứng, bí mật của `kien-thuc\` | `CAP-NHAT.cmd`; vẫn lỗi thì báo người phụ trách. Chỉ là cảnh báo `[!]` |
+| 8e. Kit tự cập nhật | `dong-bo.js kiem`: kit đã theo kịp nhánh `main`; hộp thư bài học còn gì | Mã 10: `dong-bo.js cap-nhat`; mã 11: mạng / đăng nhập GitHub (`git fetch` một lần); mã 12: báo người phụ trách. Cảnh báo `[!]` không chặn; `[X]` thì lệnh chạy test sẽ bị chặn |
 | 9. Đăng nhập thật (`--sau`) | 3 bài kiểm đăng nhập giao diện + API | Xem bảng lỗi Phần 13 |
 
 > **Khi cần nhờ hỗ trợ:** chạy `KIEM-TRA-MAY.cmd --sau`, **chọn toàn bộ chữ trên cửa sổ, chép và gửi** người phụ trách. Kết quả không chứa mật khẩu và cho biết ngay bạn kẹt ở đâu.
@@ -316,6 +319,34 @@ Cách chọn nhanh: **có tài liệu BA ⇒ chọn nghiệp vụ hoặc cả ha
 
 ---
 
+### 8.4 Kit càng test càng khôn: kho bài học chung
+
+**Vì sao có:** Claude không tự nhớ giữa các phiên. Nếu không ghi lại, mỗi tester lại tự mò lại cùng một bẫy (vd "kiểm sản phẩm phải dùng API `category-get-with-paging`", "công ty 9839 chưa có quyền mở ca", "dev đang lỗi 417"). Kho bài học là nơi **cả nhóm cùng ghi, cùng tra**; nó nằm trong thư mục `kien-thuc\` của kit nên **mọi tester nhận bản mới tự động** (Phần 12.4).
+
+**Bạn thấy gì khi dùng:**
+1. **Trước Bước 0**, Claude tự chạy `bai-hoc.js tim <chức năng>` và nói: *"Kho có N bài liên quan: BH-001…"* — bạn không phải làm gì. Claude chỉ đọc vài bài khớp nhất (khoảng vài trăm token), **không đọc cả kho**; ở Bước 1 báo cáo ghi mã bài học đã dùng.
+2. **Sau Bước 6** (và 6a, 6b), Claude làm **Bước 6c — Rút bài học**: viết nháp `bao-cao\<ngày>_<chức năng>\07-bai-hoc-nhap.md`, mỗi bài một ý, kèm **bằng chứng** (ảnh / báo cáo / ticket / dòng code) và **ngày xác nhận**.
+3. Bạn đọc nháp rồi chọn **Duyệt ghi vào kho / Sửa / Bỏ bài này**. Chỉ ghi điều **đúng và có bằng chứng**; chưa chắc thì bảo Claude đặt trạng thái `nghi-ngo`.
+4. Duyệt xong Claude chạy `bai-hoc.js them <nháp> --ghi` (hook hỏi bạn xác nhận lần nữa). Công cụ **tự từ chối** bài thiếu bằng chứng, quá dài, trùng bài cũ, có dấu hiệu mật khẩu / token (quét cả tệp, kể cả phần tiêu đề / thẻ), hoặc **chứa lệnh / đường dẫn không được phép trong bài học** (biến tắt cổng an toàn như `EP_BO_QUA…`, tên công cụ an toàn của kit, lệnh mạng / xoá, địa chỉ ngoài hệ thống nội bộ, kiểu "bỏ qua mọi luật"). Lý do: bài học được tự gộp vào kho chung và Claude đọc bài khi tra, nên bài không được trở thành đường chèn chỉ thị. Bài kỹ thuật thật không cần những thứ này; nếu thật sự cần, nhờ người phụ trách ghi trực tiếp.
+
+**Việc của BẠN: gần như không có — bạn KHÔNG phải dùng git.** Sau khi bạn duyệt, mọi thứ tự chạy:
+1. Bài vào **hộp thư của máy bạn** (`C:\Users\<bạn>\.easypos-tester\bai-hoc-cho-gui\`) và **dùng được ngay** trong các lần chạy sau trên máy bạn.
+2. Claude gửi lên kho chung bằng `dong-bo.js gui` — hook **hỏi bạn một lần** ("Gửi bài học lên kho chung?"): bấm **Cho phép** nếu bạn đã duyệt nháp.
+3. Máy chủ kiểm lại bài (cùng luật) rồi **tự gộp vào nhánh `main` của kit** trong khoảng 10 phút. Bài không đạt bị giữ lại cho người phụ trách xem, **không** vào main.
+4. Mọi tester (kể cả bạn) nhận bài ở lần **tự cập nhật** kế tiếp (Phần 12.4).
+
+Gửi không được (mất mạng / chưa đăng nhập GitHub / chưa có quyền ghi nhánh `inbox/`)? Claude báo mã 11; **bài vẫn an toàn trong hộp thư**, lần sau gửi lại. Cần đăng nhập GitHub: mở cmd trong thư mục kit, gõ `git fetch` một lần và đăng nhập khi cửa sổ hiện ra.
+
+**Tra tay khi bạn tò mò** (trong cmd, thư mục bộ kit): `node tools\tester\bai-hoc.js tim san-pham` · `... muc-luc` (xem mục lục) · `... thong-ke` · `... cu` (bài lâu chưa xác nhận lại). Mỗi bài có trạng thái `da-xac-nhan` / `nghi-ngo` (nên kiểm lại trước khi dựa vào) / `het-han` (không còn đúng, giữ lại để biết vì sao).
+
+**Vì sao thiết kế vậy (để bạn hiểu và tin):**
+- *Tra theo từ khoá thay vì nạp cả kho vào mỗi phiên* ⇒ kho lớn thêm 10 lần mà chi phí mỗi phiên **không tăng**.
+- *Bắt buộc có bằng chứng và ngày* ⇒ không có "lời đồn" trong kho; môi trường dev đổi thì biết bài nào cần kiểm lại.
+- *Bạn duyệt trong chat + máy chủ kiểm lại + hook hỏi xác nhận* ⇒ một bài học sai không lan ra cả nhóm; kẻ xấu hay lỗi công cụ cũng không đưa được thứ gì ngoài một tệp bài vào `main` (máy chủ chỉ nhận tệp mới đúng đường dẫn).
+- *Quét bí mật tự động ở cả máy bạn lẫn máy chủ* ⇒ kho nằm trong git của cả nhóm nên tuyệt đối không được có mật khẩu / token.
+
+---
+
 ## Phần 9. Bảy bước và lúc bạn bấm Duyệt
 
 Hết **mỗi bước** Claude ghi báo cáo vào `bao-cao\<ngày>_<chức năng>\` rồi hiện hộp **Duyệt — đi tiếp / Sửa lại bước này / Dừng**. **Chưa Duyệt thì Claude không làm bước sau.**
@@ -331,6 +362,10 @@ Hết **mỗi bước** Claude ghi báo cáo vào `bao-cao\<ngày>_<chức năng
 | **6 Tổng kết** | Bảng testcase, **phạm vi đã kiểm + tài liệu / phiên bản đã dùng**, lỗi mẫu Jira, việc test tay, mục cần BA chốt | Chốt báo cáo | `06-tong-ket.md` |
 | **6a Tạo ticket Jira** | Với mỗi lỗi thật: viết nháp `BUG-n.jira.md` → **xem trước** (kiểm trường, tìm ticket trùng, quét bí mật) → hỏi bạn | Chọn **Tạo ticket / Sửa nháp / Không tạo**; tạo xong **mở link, bấm Assign** | `BUG-n.jira.md`, `jira-nhat-ky.md` |
 | **6b UAT** | Hỏi có chạy lại trên UAT không | Có / Không / Để sau (Phần 11) | mục "Chạy UAT" |
+
+| **6c Rút bài học** | Soạn nháp bài học (bẫy, sự thật môi trường, lỗi đã biết, quy tắc nghiệp vụ) kèm bằng chứng | Duyệt / sửa / bỏ từng bài; bấm **Cho phép** khi hook hỏi gửi lên kho chung. **Không cần git** (Phần 8.4) | `07-bai-hoc-nhap.md` |
+
+*(Trước Bước 0, Claude còn tra **kho bài học** và đọc `rules\QUY-TRINH.md` một lần — bạn không phải làm gì.)*
 
 **Đừng bấm Duyệt vội:** Bước 1–2 là lúc bạn học nhiều nhất và có thể sửa hướng (thêm ca còn thiếu). Bước 4–6 là lúc bạn quyết định lỗi nào đáng báo.
 
@@ -389,11 +424,27 @@ Mở `bao-cao\<ngày>_<chức năng>\06-tong-ket.md` **trước**. Mỗi testcas
 ### 12.3 Hook chặn một lệnh ⇒ dừng lại
 Claude dừng và báo. **Đừng tìm cách lách** (đổi cách viết lệnh, chạy qua chương trình khác…). Đọc lý do, hỏi người phụ trách.
 
-### 12.4 Cập nhật bộ kit
-Người phụ trách sửa cấu hình / kịch bản sẽ báo: bấm **`CAP-NHAT.cmd`** (nó chạy `git pull` rồi đăng ký lại hook). **Chỉ bấm khi Claude không đang chạy test.** Sau cập nhật: Reload Window, rồi chạy lại `KIEM-TRA-MAY.cmd`.
-- **Đừng sửa tay tệp nào trong thư mục bộ kit** (cấu hình, hook, kịch bản có sẵn…). Nếu có tệp bị sửa, `CAP-NHAT.cmd` **từ chối cập nhật** và liệt kê tệp đó. Cách xử lý: báo người phụ trách; nếu chắc chắn bạn không cần giữ sửa đổi, mở cmd: `cd /d C:\easypos-tester` → `git restore .` rồi bấm lại `CAP-NHAT.cmd`.
-- Những thứ của riêng bạn **không bị ảnh hưởng** khi cập nhật: tài khoản và `tester.json` (nằm ở `C:\Users\<bạn>\.easypos-tester\`), thư mục `bao-cao\` (báo cáo) và `e2e\test-results\`.
-- `git pull` báo lỗi mạng / quyền: kiểm VPN và quyền truy cập repo (Phần 2.2).
+### 12.4 Cập nhật bộ kit — TỰ ĐỘNG, bạn không phải làm gì
+**Kit luôn bám theo nhánh `main`.** Người phụ trách sửa luật / công cụ / kịch bản / hook và đưa lên `main`; máy bạn tự nhận:
+- **Trước mỗi lượt chạy test** (Claude chạy `playwright test` hoặc bạn gõ `npx playwright test`), kit tự kiểm "mình đã theo kịp main chưa" (nhanh, vài giây; kiểm lại nếu bản đã quá 30 phút). Cũ thì **tự kéo về** rồi mới chạy. Đây là **cổng bắt buộc**: không kéo được và đã quá 3 ngày ngoại tuyến thì **không cho chạy test** (an toàn: tránh chạy mã cũ thiếu bản vá).
+- **Khi mở cuộc trò chuyện Claude mới**, kit cũng tự đồng bộ một lần và cho Claude biết kết quả.
+- Có cập nhật chạm **hook / công cụ / luật / cấu hình**, kit **in rõ** "CHẠM VÀO …" và liệt kê các thay đổi, không có thay đổi âm thầm.
+- Cập nhật cần cài thêm thư viện hoặc đăng ký lại hook: kit báo **mã 10** — chạy **một lần** `node tools\tester\dong-bo.js cap-nhat` (1–2 phút) hoặc bấm **`CAP-NHAT.cmd`**, rồi chạy lại test. Sau khi đăng ký lại hook, **mở cuộc trò chuyện Claude MỚI**.
+
+**Vì sao không bao giờ conflict (để bạn yên tâm):**
+1. Bạn không cần sửa tệp mà git theo dõi: kết quả test, báo cáo, ảnh, dữ liệu nghiệp vụ nằm trong thư mục được **bỏ qua**; bài học đi qua **hộp thư** ngoài thư mục kit; kịch bản bạn tự viết (`e2e\tests\<chức năng>\`) là tệp mới, không đụng tệp của kit.
+2. Kit chỉ kéo bằng kiểu "chỉ tiến lên" (không tạo merge nên không có conflict). **Main không có gì mới thì kit không đụng gì vào thư mục của bạn.**
+3. Bạn lỡ sửa tay một tệp của kit: nếu bản mới của `main` **không chạm cùng tệp** thì kit kéo về và **giữ nguyên** bản sửa của bạn (có dòng `[!]` nhắc "đang chạy kit đã sửa tay"). Nếu **chồng lấn** (hoặc bạn đang ở nhánh khác, có commit lạ, hoặc có tệp riêng của bạn trùng đúng đường dẫn tệp mới của kit), kit **sao lưu** vào `C:\Users\<bạn>\.easypos-tester\sao-luu\<giờ>\` (`thay-doi.patch`, `ghi-chu.txt`, thư mục `chua-theo-doi\` chứa bản của bạn) rồi **đưa thư mục về đúng main**. Không mất dữ liệu, không bao giờ kẹt.
+4. **Đừng sửa / thêm tệp trong `e2e\lib\`** (tệp dùng chung của kit, sẽ bị ghi đè): hàm riêng cho chức năng của bạn đặt trong `e2e\tests\<chức năng>\_chung.ts`; thấy đáng dùng chung thì ghi thành **bài học** để người phụ trách đưa vào kit.
+5. Tài khoản, `tester.json`, hộp thư bài học, báo cáo `bao-cao\` **không bao giờ bị đụng** (nằm ngoài hoặc được bỏ qua).
+
+**Chỉ có tác dụng với bản cài bằng `git clone`.** Cài từ **zip** thì kit **không tự cập nhật** (cảnh báo `[!]` mỗi lần): tải zip mới rồi bấm `CAI-DAT.cmd` — `bao-cao\` và `tai-lieu-nghiep-vu\` được **giữ nguyên**, `e2e\tests` và `kien-thuc` được sao lưu sang `.easypos-tester\sao-luu\zip-<giờ>\`. Muốn tự động: nhờ người phụ trách cài lại bằng `git clone` (Phần 3).
+
+**Khi git trên máy lỗi** (chưa cài Git, "dubious ownership" vì thư mục kit thuộc tài khoản Windows khác…): kit **không** âm thầm bỏ qua mà tính như ngoại tuyến — cho chạy kèm cảnh báo trong 3 ngày kể từ lần cập nhật cuối, sau đó **chặn (mã 11)** và nói cách sửa (vd chạy một lần `git config --global --add safe.directory "<thư mục kit>"`).
+
+**Thấy cảnh báo `[!] … đưa về main` hay `sao-luu\…`?** Bình thường, chỉ cần đọc. Muốn xem tình trạng: `node tools\tester\dong-bo.js trang-thai` (có dòng "bài đã gửi nhưng chưa thấy trong main sau 2 ngày" — nếu > 0, bài có thể đã bị máy chủ loại: báo người phụ trách). **Đừng** đặt `EP_BO_QUA_DONG_BO` để bỏ qua cổng (hook sẽ hỏi; chỉ người phụ trách quyết định).
+Cập nhật báo **mã 12 / "TỪ CHỐI"**: có commit đáng ngờ (vd bot nhận bài mà đụng tới mã nguồn). **Dừng, không chạy test**, báo người phụ trách ngay.
+Báo **"Còn việc CHƯA làm được (npm-install…)"**: lần cài thêm thư viện sau cập nhật bị lỗi — lệnh chạy test vẫn bị chặn cho tới khi làm xong; làm theo dòng "LỖI, chạy tay" (vd `cd e2e` rồi `npm install`).
 
 ### 12.5 Báo lỗi lên Jira
 
@@ -428,6 +479,11 @@ Sau khi bạn chốt báo cáo (Bước 6), với **mỗi lỗi thật** (❌; k
 | Triệu chứng | Nguyên nhân | Cách xử lý |
 |---|---|---|
 | `'node' is not recognized` | Chưa cài Node / chưa mở cửa sổ mới | Cài Node LTS; **đóng và mở lại** cmd / VS Code |
+| Test giao diện trượt với thông báo **"Đăng nhập giao diện dev kẹt ở trang đăng nhập, trong lúc đó các API sau trả lỗi: 417 GET …"** | Đăng nhập xong, một API của hệ thống (vd `get-company-configs`) trả lỗi nên giao diện không vào được — **lỗi môi trường / phần mềm**, không phải kịch bản | Không sửa kịch bản. Tra kho (`bai-hoc.js tim dang-nhap`) xem đã biết chưa; chưa thì báo người phụ trách / Jira. Các test giao diện sau trong cùng lần chạy **tự không chờ lại** (đỡ ~30 giây mỗi test); test API vẫn chạy bình thường |
+| Chạy test xong **không thấy** `ket-qua.json` / báo cáo HTML | Bạn thêm `--reporter=…` vào lệnh, nó ghi đè cấu hình sẵn | Bỏ `--reporter`; muốn xem lại: `npm run bao-cao` |
+| `bai-hoc.js them` báo **"thiếu Bằng chứng"**, **"quá dài"**, **"NGHI BÍ MẬT"**, **"trùng tiêu đề"** | Bài học chưa đạt chuẩn của kho (Phần 8.4) | Đọc dòng lỗi, nhờ Claude sửa nháp; **không** tắt kiểm tra. Trùng tiêu đề ⇒ cập nhật bài cũ (sửa "Xác nhận") |
+| **"CỔNG CẬP NHẬT KIT — không cho chạy test…"** (mã 10 / 11 / 12) | Kit chưa theo kịp `main` và không tự xử lý được: **10** = cần cài thêm sau cập nhật · **11** = không kéo được (mạng / chưa đăng nhập GitHub) và đã quá 3 ngày · **12** = có commit đáng ngờ | **10**: `node tools\tester\dong-bo.js cap-nhat` rồi chạy lại · **11**: kiểm mạng, chạy một lần `git fetch` trong thư mục kit để đăng nhập GitHub · **12**: **dừng**, báo người phụ trách |
+| `[!] Kit có thay đổi cục bộ … đưa về main` + thư mục `sao-luu\` | Bạn (hoặc công cụ) đã sửa một tệp của kit; kit tự **sao lưu rồi đưa về đúng main** | Không cần làm gì. Muốn xem bản sao lưu: `C:\Users\<bạn>\.easypos-tester\sao-luu\<giờ>\` |
 | `git clone` hỏi mật khẩu / 403 / "not found" | Chưa được mời vào repo, hoặc đăng nhập sai tài khoản GitHub | Xin quyền; đăng nhập đúng tài khoản được mời; bật VPN nếu repo nội bộ |
 | Không thấy `C:\easypos-tester\CAI-DAT.cmd` | Clone thiếu đường dẫn đích hoặc lồng thêm một lớp thư mục (`…\AIAutoTest\AIAutoTest`) | Phần 3: `git clone <link> C:\easypos-tester` |
 | `npx` / `npm` báo *"running scripts is disabled on this system"* | PowerShell chặn tệp `.ps1` | Dùng **cmd**, hoặc `npx.cmd playwright …`, hoặc (một lần) `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
@@ -461,8 +517,11 @@ Sau khi bạn chốt báo cáo (Bước 6), với **mỗi lỗi thật** (❌; k
 
 **Mỗi ngày:**
 1. Bật **VPN**. Mở VS Code ở `C:\easypos-tester`, mở cuộc trò chuyện Claude **mới**.
-2. (Khi có thông báo cập nhật) `CAP-NHAT.cmd` → `KIEM-TRA-MAY.cmd`.
+2. (Không cần làm gì để cập nhật: kit tự kéo bản mới của `main` khi mở phiên và trước mỗi lượt chạy test — Phần 12.4.)
 3. Giao việc (Phần 8) → duyệt từng bước (Phần 9) → đọc `06-tong-ket.md` (Phần 10) → báo lỗi (Phần 12.5).
+4. **Tái sử dụng test đã có (không cần giao việc lại từ đầu):** dev vừa deploy và bạn muốn kiểm nhanh cái cũ còn chạy không? Nhờ Claude *"chạy lại bộ @smoke trên dev"*, hoặc tự chạy: `cd /d C:\easypos-tester\e2e` → `npx playwright test --project=dev --grep @smoke` (nhanh, vài phút) · `--grep @regression` (đầy đủ) · `--grep @api` (chỉ API) · `--grep @ui` (chỉ giao diện). Kết quả trượt: phân loại như Phần 10, rồi **tra kho bài học** trước khi báo lỗi mới.
+5. **Mỗi chức năng một cuộc trò chuyện Claude mới** (nút *New chat*, rồi giao việc). Lý do (đã đo thật): trong một phiên dài, ~87% chi phí là Claude *đọc lại* mọi thứ đã nói / đã đọc ở các lần trước; chạy lại một chức năng trong phiên mới chỉ tốn khoảng **2%** so với trong phiên dài. Việc chạy lại không mất gì vì tri thức nằm trong kho bài học và báo cáo, không nằm trong cuộc trò chuyện.
+6. Thêm test cho chức năng mới? Viết kịch bản mới **dùng hàm có sẵn trong `e2e\lib\`** và gắn nhãn (`@api` / `@ui` / `@regression`, vài test cốt lõi thêm `@smoke`) — Claude làm sẵn việc này theo `rules\QUY-TRINH.md`.
 
 **Cuối mỗi lượt kiểm thử, tự kiểm lại:**
 - ☐ Đã đọc `06-tong-ket.md`, hiểu từng ❌ / ⚠️ / ⏸.
@@ -470,6 +529,7 @@ Sau khi bạn chốt báo cáo (Bước 6), với **mỗi lỗi thật** (❌; k
 - ☐ Đã quyết dữ liệu `AUTO_` (giữ / dọn).
 - ☐ Đã trả lời câu hỏi **UAT**.
 - ☐ Đã tạo ticket Jira cho lỗi thật và ghi mã vào báo cáo.
+- ☐ Đã duyệt **bài học** (Bước 6c) và, nếu có bài mới, đã bấm **Cho phép** gửi lên kho chung (không cần git; Phần 8.4).
 - ☐ Không có mật khẩu / token nào nằm trong chat, ticket, báo cáo.
 
 **Gỡ bộ kit** (đổi máy / không dùng nữa): `GO-CAI-DAT.cmd` (giữ `~\.easypos-tester`; tự xoá thư mục đó nếu muốn xoá cả tài khoản).
@@ -482,6 +542,9 @@ Sau khi bạn chốt báo cáo (Bước 6), với **mỗi lỗi thật** (❌; k
 |---|---|
 | **DEV / UAT / PROD** | Môi trường lập trình / thử trước phát hành / hệ thống thật của khách (cấm test) |
 | **Auto test** | Chương trình làm thay người: mở trình duyệt, gõ, bấm, so kết quả |
+| **Nhãn test (`@smoke`, `@api`, `@ui`, `@regression`)** | Thẻ gắn vào test để chạy theo nhóm: `@smoke` = vài test cốt lõi, chạy nhanh sau mỗi lần dev deploy; `@regression` = bộ đầy đủ để kiểm "có làm hỏng cái cũ không". Chạy: `cd e2e` → `npx playwright test --project=dev --grep @smoke` |
+| **Bài học (BH-xxx)** | Một điều đáng nhớ đã được kiểm chứng (bẫy, sự thật môi trường, lỗi đã biết), nằm trong `kien-thuc\` để cả nhóm dùng lại |
+| **Thư viện dùng chung (`e2e\lib\`)** | Hàm viết một lần dùng cho mọi kịch bản (đăng nhập, đọc phản hồi API, sinh mã `AUTO_`, đóng hộp thoại, hàm riêng cho sản phẩm). Viết kịch bản mới thì **import**, đừng chép |
 | **Playwright** | Phần mềm điều khiển trình duyệt tự động |
 | **Kịch bản (`.spec.ts`)** | Tệp mô tả thao tác và kiểm tra |
 | **Testcase** | Một tình huống kiểm: "nhập trùng mã thì bị từ chối" |

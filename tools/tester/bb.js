@@ -136,10 +136,42 @@ function inDiff(dong, co) {
   if (n < dong.length) console.log('\n... con ' + (dong.length - n) + ' dong nua - them --du de in du, hoac --ra <tep> de ghi ra tep.');
 }
 
+/* In nội dung một tệp có chọn lọc để khỏi đọc cả tệp lớn: --dong a-b, --tim <regex>; không chọn thì in tối đa 400 dòng (thêm --du để in đủ). */
+const TOI_DA_DONG_TEP = 400;
+function inTep(noi, co) {
+  const d = noi.split('\n'); if (d.length && d[d.length - 1] === '') d.pop();
+  const so = i => String(i + 1).padStart(5) + '  ';
+  if (co.dong) {
+    const m = String(co.dong).match(/^(\d+)(?:-(\d+))?$/);
+    if (!m) die('--dong phai la "a-b" hoac "a" (vd 120-180)');
+    const a = Math.max(1, +m[1]), b = Math.min(d.length, +(m[2] || m[1]));
+    console.log(d.slice(a - 1, b).map((l, i) => so(a - 1 + i) + l).join('\n'));
+    console.error('# dong ' + a + '-' + b + ' / ' + d.length);
+    return;
+  }
+  if (co.tim) {
+    let re; try { re = new RegExp(co.tim, 'i'); } catch (e) { die('--tim: bieu thuc khong hop le: ' + e.message); }
+    const hit = []; d.forEach((l, i) => { if (re.test(l)) hit.push(i); });
+    const ra = new Set(); for (const i of hit.slice(0, 40)) for (let k = Math.max(0, i - 2); k <= Math.min(d.length - 1, i + 2); k++) ra.add(k);
+    let truoc = -2;
+    for (const i of [...ra].sort((x, y) => x - y)) { if (i > truoc + 1) console.log('  ...'); console.log(so(i) + d[i]); truoc = i; }
+    console.error('# ' + hit.length + ' cho khop "' + co.tim + '" / ' + d.length + ' dong' + (hit.length > 40 ? ' (chi in 40 cho dau)' : ''));
+    return;
+  }
+  if (!co.du && d.length > TOI_DA_DONG_TEP) {
+    console.log(d.slice(0, TOI_DA_DONG_TEP).join('\n'));
+    console.error('# Tep co ' + d.length + ' dong, moi in ' + TOI_DA_DONG_TEP + ' dong dau. Doc doan khac: --dong a-b · tim noi dung: --tim <regex> · in du: --du');
+    return;
+  }
+  console.log(d.join('\n'));
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const co = { du: args.includes('--du'), diff: args.includes('--diff'), ra: null };
   const iRa = args.indexOf('--ra'); if (iRa >= 0) { co.ra = args[iRa + 1]; args.splice(iRa, 2); }
+  // Chỉ in phần cần (tiết kiệm token): --dong 120-180 (số dòng, tính từ 1) · --tim <regex> (dòng khớp ± 2 dòng quanh, tối đa 40 chỗ).
+  for (const k of ['dong', 'tim']) { const i = args.indexOf('--' + k); if (i >= 0) { co[k] = args[i + 1]; args.splice(i, 2); } }
   const a = args.filter(x => !/^--(du|diff)$/.test(x));
   const lenh = a[0];
 
@@ -222,7 +254,7 @@ async function main() {
     // Đường REST /raw (đường web /projects/…/raw chuyển hướng sang trang đăng nhập với token).
     const r = await get(R.rest + '/raw/' + f.split('/').map(encodeURIComponent).join('/') + (at ? '?at=' + encodeURIComponent(at) : ''), '*/*');
     if (r.s !== 200) loiHttp(r, f + ' (' + (a[3] || 'nhanh mac dinh') + ')');
-    process.stdout.write(r.d.endsWith('\n') ? r.d : r.d + '\n');
+    inTep(r.d, co);
     return;
   }
   if (lenh === 'ls') {

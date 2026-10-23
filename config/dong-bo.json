@@ -1,0 +1,19 @@
+{
+  "_ghiChu": "Cấu hình đồng bộ kit (tools/tester/dong-bo.js, tools/ci/nhan-bai-hoc.js). Chỉ người phụ trách sửa. Thêm / nới giá trị = nới cổng an toàn ⇒ hook hỏi.",
+  "nhanhChinh": "main",
+  "remote": "origin",
+  "tienToHopThu": "inbox",
+  "tuoiToiDaPhut": 30,
+  "choPhepNgoaiTuyenNgay": 3,
+  "timeoutFetchGiay": 25,
+  "timeoutGuiGiay": 60,
+  "toiDaCommitMoiLanKeo": 300,
+  "toiDaBaiMoiLanGui": 20,
+  "botEmail": "easypos-kit-bot@users.noreply.github.com",
+  "botTen": "easypos-kit-bot",
+  "duongNhayCam": [
+    "hooks/", "tools/", "e2e/lib/", "e2e/playwright.config.ts", "e2e/package.json", "rules/", "config/", "setup.js",
+    "CAI-DAT.cmd", "CAP-NHAT.cmd", "GO-CAI-DAT.cmd", "KIEM-TRA-MAY.cmd", ".github/"
+  ],
+  "duongBaiHoc": "kien-thuc/bai/"
+}

@@ -5,6 +5,9 @@
  *   page        — như Playwright, nhưng CHẶN mọi request tới địa chỉ prod (prodChan)
  * Kịch bản viết:  import { test, expect } from '../../lib/fixtures';
  * Tên test bắt đầu bằng MÃ TESTCASE để báo cáo đối chiếu được:  test('[TC-API-001] Tạo hoá đơn hợp lệ', …) */
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { test as base, expect, APIRequestContext } from '@playwright/test';
 import { choGhiProd, choPhepProd, dangNhap, Env, kiemUrl, laMoiTruongProd, laProd, moiTruong, rieng, taiKhoan, thieuTaiKhoan } from './moi-truong';
 
@@ -27,6 +30,25 @@ function chiDoc(ctx: APIRequestContext, env: Env): APIRequestContext {
 /* Thông tin KHÔNG nhạy cảm của phiên đăng nhập API vừa tạo (không chứa token / mật khẩu): công ty đang vào, người dùng, quyền quản lý ca. */
 export type Phien = { comId: number | null; userId: number | null; shiftManagement: boolean | null; tenCongTy: string | null };
 let phienHienTai: Phien = { comId: null, userId: null, shiftManagement: null, tenCongTy: null };
+
+/* Phiên đăng nhập API dùng lại trong một tiến trình test. Hết hạn sau 8 phút để token (có hạn) không chết giữa chừng; đặt EP_PHIEN_MOI=1 để mỗi test đăng nhập lại như cũ. */
+const HAN_PHIEN_MS = process.env.EP_PHIEN_MOI === '1' ? 0 : 8 * 60_000;
+let phienDem: { khoa: string; token: string; phien: Phien; luc: number } | null = null;
+
+/* Môi trường nào đã bị phát hiện "đăng nhập giao diện hỏng do API lỗi" trong lần chạy này. Playwright khởi động lại tiến trình test sau mỗi test trượt
+ * nên không thể giữ trong bộ nhớ: ghi tệp tạm theo tiến trình chạy (cha của worker), chỉ chứa thông báo lỗi — KHÔNG chứa token / mật khẩu. */
+const tepHong = (env: string) => path.join(os.tmpdir(), `ep-ui-hong-${process.ppid}-${env}.txt`);
+const uiHong = {
+  // Chỉ tin tệp còn "tươi" (≤ 30 phút): Windows tái sử dụng số tiến trình, tệp của lần chạy cũ không được làm test lần này thất bại oan.
+  get(env: string): string | undefined {
+    try { const f = tepHong(env); if (Date.now() - fs.statSync(f).mtimeMs > 30 * 60_000) return undefined; return fs.readFileSync(f, 'utf8') || undefined; } catch { return undefined; }
+  },
+  set(env: string, msg: string) { try { fs.writeFileSync(tepHong(env), msg); } catch { /* không ghi được thì chỉ mất phần tăng tốc */ } },
+};
+
+/* Đếm số lần đăng nhập API trong tiến trình test (in khi đặt EP_THONG_KE=1) — để đo việc dùng lại phiên có hiệu quả không. */
+let demDangNhap = 0;
+if (process.env.EP_THONG_KE === '1') process.on('exit', () => console.error(`[thong-ke] dang nhap API: ${demDangNhap} lan`));
 
 type Fx = { env: Env; api: APIRequestContext; phien: Phien; dangNhapUI: () => Promise<void> };
 
@@ -61,6 +83,12 @@ export const test = base.extend<Fx>({
     const m = moiTruong(env);
     const prod = laMoiTruongProd(env);
     const goc = goiCuoi(kiemUrl(m.apiUrl || m.webUrl, `moiTruong.${env}.apiUrl / webUrl`, prod));
+    // Dùng lại phiên đăng nhập trong cùng tiến trình test: đăng nhập MỘT lần rồi chia cho mọi test (trước đây mỗi test đăng nhập lại 1–2 lần ⇒ chậm, và nhiều lần sai/lặp dễ khoá tài khoản).
+    const khoa = `${env}|${process.env['EP_CONGTY_' + String(env).toUpperCase()] || ''}`;
+    let token = '';
+    if (phienDem && phienDem.khoa === khoa && Date.now() - phienDem.luc < HAN_PHIEN_MS) {
+      token = phienDem.token; phienHienTai = phienDem.phien;
+    } else {
     const tk = taiKhoan(env, 'web');
     if (!tk) throw new Error(thieuTaiKhoan(env));
     const dn = dangNhap(env).api;
@@ -74,6 +102,7 @@ export const test = base.extend<Fx>({
     // Header thêm của môi trường (headerThem) gửi cả ở bước đăng nhập.
     const tam = await playwright.request.newContext({ baseURL: goc, ignoreHTTPSErrors: true, extraHTTPHeaders: { ...(m.headerThem || {}) } });
     const than = { ...(dn.themVaoThan || {}), [dn.truongTen]: tk.user, [dn.truongMatKhau]: tk.password };
+    demDangNhap++;
     let res = await tam.post(buoc1, { data: than });
     expect(res.ok(), `Đăng nhập API ${env} (${new URL(buoc1, goc)}) lỗi HTTP ${res.status()}`).toBeTruthy();
     let body = await res.json();
@@ -92,10 +121,12 @@ export const test = base.extend<Fx>({
       body = await res.json();
       body = body?.data ?? body;
     }
-    const token = body[dn.truongToken];
+    token = body[dn.truongToken];
     phienHienTai = { comId: body.companyId ?? null, userId: body.id ?? null, shiftManagement: body.shiftManagement ?? null, tenCongTy: body.companyName ?? null };
     await tam.dispose();
     expect(token, `Đăng nhập API ${env}: không thấy trường ${dn.truongToken} trong phản hồi`).toBeTruthy();
+      phienDem = { khoa, token, phien: phienHienTai, luc: Date.now() };
+    }
     const ctx = await playwright.request.newContext({
       baseURL: goc, ignoreHTTPSErrors: true,
       extraHTTPHeaders: { Authorization: 'Bearer ' + token, ...(m.headerThem || {}) },
@@ -111,9 +142,16 @@ export const test = base.extend<Fx>({
    * thay vì để mặc định công ty đầu tiên — nhờ vậy kịch bản UI và API làm việc trên CÙNG một công ty. */
   dangNhapUI: async ({ page, env, phien }, use) => {
     await use(async () => {
+      const daHong = uiHong.get(env);
+      if (daHong) throw new Error(`${daHong} [Đã gặp ở test giao diện trước trong cùng lần chạy nên không thử lại, khỏi chờ ~15–35 giây mỗi test.]`);
       const tk = taiKhoan(env, 'web');
       if (!tk) throw new Error(thieuTaiKhoan(env));
       const ui = dangNhap(env).ui;
+      // Ghi lại các lời gọi API lỗi trong lúc đăng nhập: nếu giao diện kẹt ở trang đăng nhập thì nói ĐÚNG API nào lỗi (đỡ đoán mò).
+      const apiLoi: string[] = [];
+      page.on('response', r => {
+        if (r.status() >= 400 && /\/api\//.test(r.url())) apiLoi.push(`${r.status()} ${r.request().method()} ${new URL(r.url()).pathname}`);
+      });
       await page.goto(ui.duongDan);
       await page.locator(ui.oTen).first().fill(tk.user);
       await page.locator(ui.oMatKhau).first().fill(tk.password);
@@ -130,13 +168,29 @@ export const test = base.extend<Fx>({
             await oCty.click();
             await page.locator('#companyId input[type="text"]').first().fill(ten).catch(() => undefined);
             await page.locator('.ng-dropdown-panel .ng-option', { hasText: ten }).first().click().catch(() => undefined);
+            // Đợi danh sách đóng hẳn: nếu bấm "Đăng nhập" khi danh sách còn mở thì cú bấm chỉ để đóng danh sách (dev 23/10/2026: kẹt ở màn chọn công ty).
+            await page.locator('.ng-dropdown-panel').first().waitFor({ state: 'detached', timeout: 3000 }).catch(() => undefined);
           }
           await page.locator(ui.nutDangNhap).first().click();
+          // Bấm lần nữa một lần nếu sau 4 giây vẫn ở trang đăng nhập (cú bấm đầu bị nuốt do giao diện chưa kịp nhận công ty).
+          await page.waitForURL(u => !/login/i.test(u.toString()), { timeout: 4000 }).catch(async () => {
+            if (/login/i.test(page.url()) && await page.locator(ui.nutDangNhap).first().isVisible().catch(() => false)) await page.locator(ui.nutDangNhap).first().click().catch(() => undefined);
+          });
           break;
         }
       }
-      if (ui.sauDangNhap) await page.waitForURL(new RegExp(ui.sauDangNhap));
-      else await page.waitForURL(u => !/login/i.test(u.toString()), { timeout: 30_000 });
+      // Chờ vào được hệ thống tối đa 30 giây; NHƯNG nếu đã có API lỗi và 8 giây vẫn ở trang đăng nhập thì dừng sớm (đợi tiếp cũng vô ích).
+      const dauCho = Date.now();
+      const daVao = () => ui.sauDangNhap ? new RegExp(ui.sauDangNhap).test(page.url()) : !/login/i.test(page.url());
+      while (!daVao() && Date.now() - dauCho < 30_000 && !(apiLoi.length && Date.now() - dauCho > 8000)) await page.waitForTimeout(400);
+      if (!daVao()) {
+        const dsLoi = [...new Set(apiLoi)].slice(0, 5).join(' ; ');
+        if (!dsLoi) throw new Error(`Đăng nhập giao diện ${env}: sau 30 giây vẫn ở ${page.url()} (không có API nào trả lỗi) — kiểm tài khoản / công ty / có hộp thoại chặn không (xem ảnh chụp, trace).`);
+        const thongBaoLoi = `Đăng nhập giao diện ${env} kẹt ở trang đăng nhập, trong lúc đó các API sau trả lỗi: ${dsLoi}. ` +
+          'Đây thường là LỖI MÔI TRƯỜNG / PHẦN MỀM (API sau đăng nhập hỏng), không phải lỗi kịch bản — gọi thử API đó bằng fixture `api` để xem nội dung lỗi, rồi báo người phụ trách / Jira.';
+        uiHong.set(env, thongBaoLoi);   // các test giao diện sau trong CÙNG lần chạy không chờ lại
+        throw new Error(thongBaoLoi);
+      }
       await page.waitForLoadState('networkidle').catch(() => { /* trang có kết nối giữ lâu (websocket) */ });
     });
   },

@@ -19,6 +19,12 @@ báo cáo + lỗi theo mẫu Jira (`EPB-…`). Hook chặn nối CSDL trực ti�
 | `mau-bao-cao/` | Mẫu báo cáo từng bước 00 → 06 |
 | `tools/tester/` | `dbq.js` (đọc CSDL, chỉ SELECT), `bb.js` (đọc Bitbucket project EPOS), `kiem-trinh-duyet.js` |
 | `tools/jira/jira.js` | Đọc ticket Jira |
+| `kien-thuc/` + `tools/tester/bai-hoc.js` | **Kho bài học chung** (bẫy kỹ thuật, sự thật môi trường, lỗi đã biết, nghiệp vụ): Claude tra trước khi làm, đề xuất bài mới sau khi làm (Bước 6c) — kit càng test càng khôn. Xem `kien-thuc/README.md` |
+| `tools/tester/dong-bo.js` + `config/dong-bo.json` | **Tự đồng bộ kit với nhánh `main`**, không conflict (sao lưu rồi đưa về main khi có gì lạ), cổng "kit phải mới" trước mỗi lượt chạy test, gửi bài học lên kho chung; tester không dùng git. Máy người phụ trách đặt vai trò `phu-trach` để không bao giờ bị ghi đè |
+| `tools/ci/nhan-bai-hoc.js` + `.github/workflows/nhan-bai-hoc.yml` | **Máy chủ nhận bài học**: kiểm lại rồi tự gộp vào `main` bằng commit của bot (chỉ thêm tệp bài mới). Cần thiết lập GitHub một lần — `tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md` mục D13 |
+| `tools/tester/uoc-token.js` | **Đo token THẬT** của một phiên Claude Code, chia theo từng lượt giao việc (token mới / đọc lại / ra, % cửa sổ ngữ cảnh) — để biết kiểm thử một chức năng tốn bao nhiêu và so trước / sau khi tối ưu |
+| `e2e/lib/` | Thư viện dùng chung cho kịch bản (đăng nhập, API, giao diện, sinh mã `AUTO_`, sản phẩm); test gắn nhãn `@smoke @api @ui @regression` |
+| `rules/` | `RULES.md` (luật luôn nạp, ngắn) · `QUY-TRINH.md` (chi tiết 7 bước, đọc một lần khi bắt đầu một chức năng) |
 | `tools/jira/jira-tao.js` + `config/jira.json` | **Tạo ticket Bug** từ nháp đã duyệt (xem trước / `--tao`), đính kèm, chống trùng, in link; tester chỉ bấm Assign |
 | `tools/confluence/confluence.js` | **Đọc tài liệu nghiệp vụ** từ Confluence → markdown có phiên bản (`tim`, `trang`, `con`, `dinh-kem`, `lien-ket`); loại kiểm thử "kỹ thuật" không cần |
 | `tools/lib/atlassian.js` | Phần dùng chung: nạp token (PAT), gọi REST, quét bí mật |

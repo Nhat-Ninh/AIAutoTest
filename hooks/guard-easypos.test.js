@@ -44,6 +44,25 @@ const cases = [
   ['dbq.js SELECT trên môi trường dev', bash(`node ${DBQ} dev c:/tmp/q.sql`), 'allow'],
   ['jira-tao.js xem trước (dry-run) ⇒ cho', bash(`node "${K('tools', 'jira', 'jira-tao.js').replace(/\\/g, '/')}" bao-cao/x/BUG-1.jira.md`), 'allow'],
   ['jira-tao.js --toi ⇒ cho', bash(`node "$EP_KIT/tools/jira/jira-tao.js" --toi`), 'allow'],
+  ['bai-hoc.js tim ⇒ cho', bash(`node "$EP_KIT/tools/tester/bai-hoc.js" tim san-pham`), 'allow'],
+  ['bai-hoc.js them (xem trước) ⇒ cho', bash(`node "$EP_KIT/tools/tester/bai-hoc.js" them bao-cao/x/07-bai-hoc-nhap.md`), 'allow'],
+  ['bai-hoc.js them --ghi ⇒ hỏi', bash(`node "$EP_KIT/tools/tester/bai-hoc.js" them bao-cao/x/07-bai-hoc-nhap.md --ghi`), 'ask'],
+  ['dong-bo.js gui --xem (chỉ xem) ⇒ cho', bash(`node "$EP_KIT/tools/tester/dong-bo.js" gui --xem`), 'allow'],
+  ['dong-bo.js "gui" (có ngoặc kép) ⇒ vẫn hỏi', bash(`node "$EP_KIT/tools/tester/dong-bo.js" "gui"`), 'ask'],
+  ['dong-bo.js gui (gửi bài lên kho chung) ⇒ hỏi', bash(`node "$EP_KIT/tools/tester/dong-bo.js" gui`), 'ask'],
+  ['dong-bo.js kiem / trang-thai ⇒ cho', bash(`node "$EP_KIT/tools/tester/dong-bo.js" trang-thai`), 'allow'],
+  ['dong-bo.js cap-nhat ⇒ cho (kéo main, sao lưu khi cần)', bash(`node "$EP_KIT/tools/tester/dong-bo.js" cap-nhat`), 'allow'],
+  ['dong-bo.js cap-nhat --chap-nhan-sao-luu (ghi đè kit) ⇒ hỏi', bash(`node "$EP_KIT/tools/tester/dong-bo.js" cap-nhat --chap-nhan-sao-luu`), 'ask'],
+  ['EP_BO_QUA_DONG_BO=1 (tắt cổng cập nhật) ⇒ hỏi', bash(`EP_BO_QUA_DONG_BO=1 npx playwright test tests/dang-nhap --project=dev`), 'ask'],
+  ['git status ⇒ cho', bash(`git status --short`), 'allow'],
+  ['git log / diff ⇒ cho', bash(`git log --oneline -5 && git diff --stat`), 'allow'],
+  ['git commit ⇒ hỏi', bash(`git commit -m "x"`), 'ask'],
+  ['git push ⇒ hỏi', bash(`git push origin main`), 'ask'],
+  ['git -C kit pull ⇒ hỏi', bash(`git -C C:/easypos-tester pull`), 'ask'],
+  ['git reset --hard ⇒ hỏi', bash(`git reset --hard origin/main`), 'ask'],
+  ['git checkout -f ⇒ hỏi', bash(`git checkout -f main`), 'ask'],
+  ['git stash ⇒ hỏi', bash(`git stash`), 'ask'],
+  ['gửi bài học: bai-hoc.js them --ghi ⇒ hỏi (đã có), --vao-kho ⇒ hỏi', bash(`node "$EP_KIT/tools/tester/bai-hoc.js" them x.md --ghi --vao-kho`), 'ask'],
   ['jira-tao.js --tao (tạo thật) ⇒ hỏi', bash(`node "$EP_KIT/tools/jira/jira-tao.js" bao-cao/x/BUG-1.jira.md --tao`), 'ask'],
   ['confluence.js tìm / lấy trang ⇒ cho', bash(`node "$EP_KIT/tools/confluence/confluence.js" trang 50709307`), 'allow'],
   ['Đọc tệp token Confluence ⇒ chặn', read(path.join(os.homedir(), '.easypos-tester', 'confluence' + '.properties')), 'deny'],
@@ -198,6 +217,27 @@ for (const [ten, ok] of kiemThat) {
   console.log((ok ? 'ĐÚNG ' : 'SAI  ') + '[cấu hình thật] ' + ten);
 }
 
-const tong = cases.length + kt.length + kiemThat.length;
+/* ---- nhận dạng lệnh chạy test (cổng cập nhật kit) ---- */
+const { canDongBo } = require('./guard-easypos.js');
+const kiemCong = [
+  ['npx playwright test (cwd trong kit) ⇒ qua cổng cập nhật', canDongBo('cd e2e && npx playwright test tests/x --project=dev', K()) === true],
+  ['npx.cmd playwright test (cwd trong kit) ⇒ qua cổng', canDongBo('npx.cmd playwright test --grep @smoke', K('e2e')) === true],
+  ['npm run test:dev (cwd trong kit) ⇒ qua cổng', canDongBo('npm run test:dev', K('e2e')) === true],
+  ['cd tới thư mục kit trong lệnh (cwd lạ) ⇒ qua cổng', canDongBo('cd /d ' + K('e2e') + ' && npx playwright test', 'C:/Users/x') === true],
+  ['dùng $EP_KIT trong lệnh ⇒ qua cổng', canDongBo('cd "$EP_KIT/e2e" && npx playwright test', 'C:/Users/x') === true],
+  ['npm test ở DỰ ÁN KHÁC (cwd ngoài kit, lệnh không nhắc kit) ⇒ KHÔNG qua cổng', canDongBo('npm test', 'C:/work/easyposfrontend') === false],
+  ['--list ở lệnh con này KHÔNG miễn cổng cho lệnh con kia', canDongBo('npx playwright test --grep @a; npx playwright test --list', K()) === true],
+  ['npx playwright@1.55.0 test ⇒ qua cổng', canDongBo('npx playwright@1.55.0 test', K()) === true],
+  ['node …/playwright/cli.js test ⇒ qua cổng', canDongBo('node node_modules/@playwright/test/cli.js test', K('e2e')) === true],
+  ['playwright test --list ⇒ KHÔNG cần cổng (chỉ liệt kê)', canDongBo('npx playwright test --list --project=dev', K()) === false],
+  ['lệnh khác (bai-hoc.js tim) ⇒ không qua cổng', canDongBo('node tools/tester/bai-hoc.js tim san-pham', K()) === false],
+  ['đọc mã (grep playwright) ⇒ không qua cổng', canDongBo('grep -rn "playwright" e2e/lib', K()) === false],
+];
+for (const [ten, ok] of kiemCong) {
+  if (!ok) sai++;
+  console.log((ok ? 'ĐÚNG ' : 'SAI  ') + '[cổng cập nhật] ' + ten);
+}
+
+const tong = cases.length + kt.length + kiemThat.length + kiemCong.length;
 console.log('\n' + (tong - sai) + '/' + tong + ' ca đúng');
 process.exit(sai ? 1 : 0);

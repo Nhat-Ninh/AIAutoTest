@@ -3,8 +3,10 @@
  * Hai nhóm chạy TUẦN TỰ (mỗi người dùng chỉ có một ca mở): nhóm BE (API) rồi nhóm FE (giao diện).
  * An toàn: nếu tài khoản test đang có sẵn ca mở, hoặc không có quyền quản lý ca ⇒ test bị BỎ QUA kèm lý do (không tự đóng ca có sẵn).
  * Ca do kịch bản tạo qua API có mô tả "AUTO_mo-dong-ca"; mỗi nhóm kết thúc bằng việc đóng ca đã mở. */
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
 import { test, expect } from '../../lib/fixtures';
+import { dsTuDuLieu, duLieu, json } from '../../lib/api';
+import { dongHopThoai } from '../../lib/ui';
 
 const MO_TA = 'AUTO_mo-dong-ca';
 const TRANG_CA = process.env.EP_TRANG_CA || '/easy-pos/session';   // đường dẫn màn hình ca, tính từ webUrl (xác nhận khi chạy thật)
@@ -12,14 +14,11 @@ const TRANG_CA = process.env.EP_TRANG_CA || '/easy-pos/session';   // đường 
 test.describe.configure({ mode: 'serial' });
 
 /* ---------- tiện ích ---------- */
-async function json(r: { json: () => Promise<any> }) { return r.json().catch(() => ({})); }
-const duLieu = (b: any) => b?.data ?? b;
 
 /** Lấy danh sách ca hôm nay của người dùng (API phân trang). Trả mảng, rỗng nếu không đọc được. */
 async function dsCa(api: APIRequestContext): Promise<any[]> {
   const r = await api.get('client/page/shift/get-with-paging?page=0&size=50');
-  const d = duLieu(await json(r));
-  return Array.isArray(d) ? d : (d?.content ?? d?.items ?? []);
+  return dsTuDuLieu(duLieu(await json(r)));
 }
 /** Ca đang mở (end_time rỗng) mới nhất. */
 async function caDangMo(api: APIRequestContext) {
@@ -38,18 +37,9 @@ async function dieuKien(api: APIRequestContext, phien: { shiftManagement: boolea
   test.skip(co?.canOpenShift === false, 'MÔI TRƯỜNG: tài khoản đang có sẵn một ca mở (không phải của kịch bản) — đóng ca đó bằng tay rồi chạy lại');
 }
 
-/** Đóng các hộp thoại chào / cảnh báo che màn hình sau đăng nhập (kịch bản lỗi nếu không đóng). */
-async function dongHopThoai(page: Page) {
-  for (let i = 0; i < 4; i++) {
-    const nut = page.locator('.swal2-confirm, .modal.show .btn-close, .modal.show button:has-text("Đóng")').first();
-    if (!(await nut.isVisible().catch(() => false))) break;
-    await nut.click().catch(() => undefined);
-    await page.waitForTimeout(400);
-  }
-}
 
 /* ============================ NHÓM BE (API) ============================ */
-test.describe('BE — API mở / đóng ca', () => {
+test.describe('BE — API mở / đóng ca', { tag: ['@api', '@regression'] }, () => {
   let idCa: number | null = null;
 
   test('[TC-BE-001] check-open khi chưa có ca mở: canOpenShift = true', async ({ api, phien }) => {
@@ -59,7 +49,7 @@ test.describe('BE — API mở / đóng ca', () => {
     expect(co.overtimeShiftId ?? null, 'không có ca quá 24h').toBeNull();
   });
 
-  test('[TC-BE-002] Mở ca hợp lệ: 200, status true; check-open sau đó = false', async ({ api, phien }) => {
+  test('[TC-BE-002] Mở ca hợp lệ: 200, status true; check-open sau đó = false', { tag: '@smoke' }, async ({ api, phien }) => {
     await dieuKien(api, phien);
     const r = await moCa(api, { money: 100000, comId: phien.comId, description: MO_TA });
     const b = await json(r);
@@ -135,7 +125,7 @@ test.describe('BE — API mở / đóng ca', () => {
 });
 
 /* ============================ NHÓM FE (giao diện) ============================ */
-test.describe('FE — màn hình ca làm việc', () => {
+test.describe('FE — màn hình ca làm việc', { tag: ['@ui', '@regression'] }, () => {
   test.beforeEach(async ({ page, dangNhapUI, api, phien }) => {
     // Kiểm quyền bằng API TRƯỚC khi đăng nhập giao diện — thiếu quyền thì bỏ qua ngay (khỏi mất ~30 giây mỗi test).
     void api;

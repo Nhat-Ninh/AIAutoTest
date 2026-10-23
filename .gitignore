@@ -21,3 +21,6 @@ e2e/playwright-report/
 
 # Tài liệu nghiệp vụ lấy từ Confluence (nội dung nội bộ) — chỉ nằm trên máy tester
 tai-lieu-nghiep-vu/
+
+# Mục lục kho bài học: tự sinh (bai-hoc.js muc-luc --ghi), không đưa vào git để khỏi xung đột khi nhiều bài được gộp
+kien-thuc/INDEX.md

@@ -25,6 +25,7 @@ function project(env: Env) {
 
 export default defineConfig({
   testDir: './tests',
+  globalSetup: './lib/toan-cuc.ts',   // cổng "kit phải mới theo main" + khoá đang chạy test (xem lib/toan-cuc.ts)
   timeout: 90_000,
   expect: { timeout: 15_000 },
   retries: 0,          // lỗi chập chờn phải hiện ra trong báo cáo, không giấu bằng chạy lại

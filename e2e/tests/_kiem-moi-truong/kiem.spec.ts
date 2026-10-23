@@ -3,7 +3,7 @@
 import { test, expect } from '../../lib/fixtures';
 import { moiTruong, taiKhoan } from '../../lib/moi-truong';
 
-test.describe('giao diện', () => {
+test.describe('giao diện', { tag: ['@smoke', '@ui'] }, () => {
   test.skip(({ env }) => !moiTruong(env).webUrl, 'Chưa điền webUrl cho môi trường này');
   test('[KIEM-01] Mở được trang giao diện', async ({ page }) => {
     const res = await page.goto('/');
@@ -11,7 +11,7 @@ test.describe('giao diện', () => {
   });
 });
 
-test.describe('đăng nhập giao diện', () => {
+test.describe('đăng nhập giao diện', { tag: ['@smoke', '@ui'] }, () => {
   test.skip(({ env }) => !moiTruong(env).webUrl || !taiKhoan(env, 'web'), 'Chưa có địa chỉ / tài khoản web cho môi trường này');
   test('[KIEM-03] Đăng nhập giao diện được (tài khoản → chọn công ty nếu có nhiều)', async ({ page, dangNhapUI }) => {
     await dangNhapUI();
@@ -19,7 +19,7 @@ test.describe('đăng nhập giao diện', () => {
   });
 });
 
-test.describe('backend', () => {
+test.describe('backend', { tag: ['@smoke', '@api'] }, () => {
   test.skip(({ env }) => !taiKhoan(env, 'web') || !(moiTruong(env).apiUrl || moiTruong(env).webUrl), 'Chưa có địa chỉ / tài khoản web cho môi trường này');
   test('[KIEM-02] Đăng nhập API được', async ({ api }) => {
     const r = await api.get('client/common/introspect');

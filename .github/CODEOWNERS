@@ -1,0 +1,13 @@
+# Phần nhạy cảm của bộ kit do người phụ trách sở hữu: mọi thay đổi chạm các đường dẫn này cần được người phụ trách duyệt
+# (bật "Require review from Code Owners" trong ruleset của main — xem tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md, mục D13).
+# Bot nhận bài học chỉ được thêm tệp mới dưới kien-thuc/bai/ nên không chạm các đường dẫn dưới đây.
+/.github/            @Nhat-Ninh
+/hooks/              @Nhat-Ninh
+/tools/              @Nhat-Ninh
+/rules/              @Nhat-Ninh
+/config/             @Nhat-Ninh
+/e2e/lib/            @Nhat-Ninh
+/e2e/playwright.config.ts @Nhat-Ninh
+/e2e/package.json    @Nhat-Ninh
+/setup.js            @Nhat-Ninh
+/*.cmd               @Nhat-Ninh

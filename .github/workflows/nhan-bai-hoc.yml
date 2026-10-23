@@ -1,0 +1,43 @@
+# Nhận bài học từ tester và tự gộp vào main (mã chạy là mã của MAIN, nội dung nhánh inbox/* chỉ được đọc như dữ liệu).
+# Chạy theo LỊCH (workflow lịch luôn lấy định nghĩa từ nhánh mặc định) chứ không chạy theo "push": nếu chạy theo push thì tester có thể sửa chính tệp này
+# trong nhánh của họ để lách kiểm tra.
+#
+# Việc quản trị làm MỘT lần (xem tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md, mục D13):
+#   - Bật GitHub Actions cho repo.
+#   - Bảo vệ nhánh main (ruleset): cấm đẩy trực tiếp trừ người phụ trách + "github-actions" (bot này đẩy commit nhận bài).
+#   - Cho tester quyền GHI repo nhưng nhánh main được bảo vệ ⇒ tester chỉ tạo được nhánh inbox/* (không sửa được main).
+#   - CODEOWNERS: .github/, hooks/, tools/, rules/, config/, e2e/lib/, setup.js do người phụ trách sở hữu.
+name: Nhan bai hoc tu tester
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: nhan-bai-hoc
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  hop-nhat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Kiem tra bo thu cua chinh cong cu nhan bai (khong dung mang)
+        # Chi de canh bao som: bo thu duoc viet va kiem tren Windows; loi ham muc rieng cua Linux khong duoc chan ca duong nhan bai.
+        continue-on-error: true
+        run: |
+          node tools/tester/bai-hoc.test.js
+          node tools/tester/dong-bo.test.js
+      - name: Nhan bai hoc (kiem lai + gop vao main)
+        run: node tools/ci/nhan-bai-hoc.js hop-nhat

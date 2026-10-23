@@ -1,34 +1,29 @@
-﻿<#
-  cap-nhat.ps1 - keo ban moi cua EasyPOS tester kit (git pull) roi dang ky lai hook + chay bo thu. CAP-NHAT.cmd goi tep nay.
-  Chi dung cho ban CLONE git (cai bang CAI-DAT.cmd tu thu muc clone). Ban giai nen zip: tai zip moi, bam CAI-DAT.cmd.
-#>
+﻿# cap-nhat.ps1 - cap nhat EasyPOS tester kit len ban moi nhat cua nhanh main. CAP-NHAT.cmd goi tep nay.
+# Kit TU cap nhat truoc moi lan chay test (tools/tester/dong-bo.js); tep nay la cach CHU DONG khi can (vd sau khi nghi ngo, hoac hook bao "can cap-nhat").
+# Khong can biet git: moi thay doi la trong thu muc kit duoc sao luu vao ~/.easypos-tester/sao-luu/<gio>/ roi dua ve dung main.
 $ErrorActionPreference = 'Continue'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 $kit = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 function Dat($s)  { Write-Host ('  [OK] ' + $s) -ForegroundColor Green }
-function Canh($s) { Write-Host ('  [!]  ' + $s) -ForegroundColor Yellow }
 function Loi($s)  { Write-Host ('  [X]  ' + $s) -ForegroundColor Red }
 
 Write-Host ('CAP NHAT EasyPOS tester kit: ' + $kit) -ForegroundColor Cyan
-$null = cmd /c ('git -C "' + $kit + '" rev-parse --is-inside-work-tree 2>&1')
-if ($LASTEXITCODE -ne 0) { Loi 'Thu muc nay khong phai ban clone git - tai zip moi roi bam CAI-DAT.cmd.'; exit 1 }
+$null = cmd /c 'node -v 2>&1'
+if ($LASTEXITCODE -ne 0) { Loi 'Khong thay Node.js - cai Node LTS roi mo cua so cmd moi.'; exit 1 }
 
-$doi = cmd /c ('git -C "' + $kit + '" status --porcelain --untracked-files=no 2>&1')
-if ($doi) { Loi 'Co tep bi sua tay trong thu muc bo kit (git status) - khong keo de. Hoan tac hoac bao nguoi phu trach:'; $doi | ForEach-Object { Write-Host ('       ' + $_) }; exit 1 }
-
-$cu = (cmd /c ('git -C "' + $kit + '" rev-parse HEAD 2>&1')).Trim()
-cmd /c ('git -C "' + $kit + '" pull --ff-only 2>&1') | ForEach-Object { Write-Host ('  ' + $_) }
-if ($LASTEXITCODE -ne 0) { Loi 'git pull loi (mang / quyen truy cap repo / lich su lech) - hook GIU NGUYEN ban cu.'; exit 1 }
-$moi = (cmd /c ('git -C "' + $kit + '" rev-parse HEAD 2>&1')).Trim()
-if ($cu -eq $moi) { Dat 'Da la ban moi nhat.' }
-else {
-    Dat 'Thay doi moi:'
-    cmd /c ('git -C "' + $kit + '" log --oneline ' + $cu + '..' + $moi + ' 2>&1') | ForEach-Object { Write-Host ('       ' + $_) }
+# --chap-nhan-sao-luu: ban chu dong bam CAP-NHAT nen chap nhan dua thu muc kit ve dung main (co sao luu truoc). Khong bao gio conflict.
+& node (Join-Path $kit 'tools\tester\dong-bo.js') cap-nhat --chap-nhan-sao-luu
+$ma = $LASTEXITCODE
+if ($ma -ne 0) {
+    if ($ma -eq 11) { Loi 'Khong ket noi duoc GitHub: kiem mang / dang nhap GitHub (chay mot lan "git fetch" trong thu muc kit), roi bam lai.' }
+    elseif ($ma -eq 12) { Loi 'Cap nhat bi TU CHOI vi dang ngo (xem thong bao tren). Bao nguoi phu trach kit, dung chay test.' }
+    else { Loi ('dong-bo.js loi (ma ' + $ma + ') - bao nguoi phu trach.') }
+    exit 1
 }
 
-Write-Host ''
+# Dang ky lai hook (idempotent) + dat vai tro may neu chua co. Dong-bo cung tu lam khi hook doi, chay lai o day cho chac.
 & node (Join-Path $kit 'setup.js') --global-hooks
 if ($LASTEXITCODE -ne 0) { Loi 'setup.js loi sau khi cap nhat - bao nguoi phu trach (hook co the dang o ban moi nhung bo thu sai).'; exit 1 }
 Write-Host ''
-Write-Host '  Xong. Trong VS Code: Ctrl+Shift+P -> "Developer: Reload Window", roi mo cuoc tro chuyen Claude MOI.'
+Dat 'Xong. Trong VS Code: Ctrl+Shift+P -> "Developer: Reload Window", roi mo cuoc tro chuyen Claude MOI.'
 exit 0

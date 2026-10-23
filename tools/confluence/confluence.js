@@ -196,6 +196,27 @@ async function layId(tham) {
   return j.results[0].id;
 }
 
+/* Tìm bản lưu của trang theo mã (thư mục <id>-<slug>/trang.md) và đọc phiên bản đã lưu. null nếu chưa có. */
+function timBanLuu(id, thuMuc) {
+  try {
+    const goc = thuMuc || THU_MUC_GOC;
+    const ten = fs.readdirSync(goc).find(f => f.startsWith(id + '-'));
+    if (!ten) return null;
+    const tep = path.join(goc, ten, 'trang.md');
+    const md = fs.readFileSync(tep, 'utf8');
+    const m = md.match(/\*\*Phiên bản: (\d+)\*\*/);
+    return { tep, md, phienBan: m ? m[1] : '' };
+  } catch (e) { return null; }
+}
+function inTomTatBanLuu(ban, tieuDe) {
+  const dong = ban.md.split('\n');
+  const muc = dong.map((l, i) => [l, i + 1]).filter(([l]) => /^#{1,4}\s/.test(l)).slice(0, 60).map(([l, i]) => String(i).padStart(4) + ': ' + l);
+  console.log('# ' + (tieuDe || '(trang)') + ' — BẢN LƯU CÒN MỚI (phiên bản ' + ban.phienBan + ', ' + dong.length + ' dòng, ~' + Math.ceil(ban.md.length / 3) + ' token)');
+  console.log('Đã có trên máy, KHÔNG in lại để khỏi đọc trùng: ' + ban.tep);
+  console.log('Mục lục (dòng: tiêu đề) — chỉ đọc đoạn cần bằng Read(offset, limit), hoặc chạy lại với --du để in cả trang, --lam-moi để tải lại:');
+  console.log(muc.join('\n'));
+}
+
 async function layTrang(id) {
   const j = await goi('/rest/api/content/' + id + '?expand=body.storage,version,space,ancestors,metadata.labels');
   const goc = (j._links && j._links.base) || A.base('confluence');
@@ -277,6 +298,16 @@ async function main() {
     }
     if (lenh === 'trang') {
       const id = await layId(args[1]);
+      // Bản lưu CÙNG phiên bản thì KHÔNG in lại cả trang (tốn token, đọc trùng): chỉ in tóm tắt + mục lục tiêu đề + đường dẫn. --du để in đủ, --lam-moi để tải lại.
+      if (!coCo('--khong-luu') && !coCo('--du') && !coCo('--lam-moi')) {
+        const ban = timBanLuu(id, giaTri('--ra', null));
+        if (ban) {
+          const v = await goi('/rest/api/content/' + id + '?expand=version');
+          const vMoi = String((v.version && v.version.number) || '');
+          if (vMoi && vMoi === ban.phienBan) { inTomTatBanLuu(ban, v.title); return; }
+          console.error('[Bản lưu v' + (ban.phienBan || '?') + ' đã cũ — trang hiện là v' + vMoi + ', tải lại]');
+        }
+      }
       const t = await layTrang(id);
       const luu = !coCo('--khong-luu');
       let dich = null;

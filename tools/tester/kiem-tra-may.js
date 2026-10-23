@@ -185,6 +185,34 @@ function thuMucTrinhDuyet() {
     }
   }
 
+  /* 8d. Kho bài học chung */
+  tieuDe('8d. Kho bài học chung (kien-thuc/)');
+  {
+    const r = chay('node', ['"' + path.join(KIT, 'tools', 'tester', 'bai-hoc.js') + '"', 'kiem']);
+    const noi = ((r.stdout || '') + '\n' + (r.stderr || '')).trim().split(/\r?\n/).filter(Boolean);
+    if (r.status === 0) ok(noi[noi.length - 1].replace(/^✔\s*/, ''));
+    else canhBao('Kho bài học có lỗi: ' + (noi[0] || '').slice(0, 200), 'Chạy CAP-NHAT.cmd lấy bản mới; vẫn lỗi thì báo người phụ trách (không sửa tay tệp trong kien-thuc/ nếu chưa được duyệt)');
+  }
+
+  /* 8e. Đồng bộ kit với main */
+  tieuDe('8e. Kit tự cập nhật theo nhánh main');
+  {
+    const r = chay('node', ['"' + path.join(KIT, 'tools', 'tester', 'dong-bo.js') + '"', 'kiem', '--nhanh']);
+    const noi = ((r.stdout || '') + '\n' + (r.stderr || '')).trim().split(/\r?\n/).filter(Boolean);
+    const cuoi = noi[noi.length - 1] || '';
+    if (r.status === 0 && !/^\s*\[!\]/.test(noi.join('\n'))) ok(cuoi.replace(/^\s*/, '') || 'Kit đã mới');
+    else if (r.status === 0) canhBao(noi.filter(l => /\[!\]/.test(l))[0].replace(/^\s*\[!\]\s*/, '').slice(0, 220), 'Không chặn việc chạy test. Nếu báo "không kéo được": kiểm mạng / đăng nhập GitHub (chạy một lần git fetch trong thư mục kit)');
+    else if (r.status === 10) canhBao('Kit vừa cập nhật và cần làm nốt (cài thêm thư viện / đăng ký hook)', 'Chạy MỘT lần: node tools\\tester\\dong-bo.js cap-nhat   (1–2 phút)');
+    else if (r.status === 11) hong('Không kéo được bản mới của kit và đã quá hạn ngoại tuyến (lệnh chạy test sẽ bị chặn)', 'Kiểm mạng; đăng nhập GitHub bằng cách chạy một lần "git fetch" trong thư mục kit; rồi chạy lại');
+    else if (r.status === 12) hong('Cập nhật kit bị TỪ CHỐI vì đáng ngờ: ' + cuoi.slice(0, 160), 'KHÔNG chạy test; báo người phụ trách kit');
+    else hong('Đồng bộ kit lỗi (mã ' + r.status + '): ' + cuoi.slice(0, 160), 'Bấm CAP-NHAT.cmd; vẫn lỗi thì báo người phụ trách');
+    const tt = chay('node', ['"' + path.join(KIT, 'tools', 'tester', 'dong-bo.js') + '"', 'trang-thai']);
+    const quaHanGui = ((tt.stdout || '').match(/chưa thấy trong main sau 2 ngày: (\d+)/) || [])[1];
+    if (quaHanGui && +quaHanGui > 0) canhBao(quaHanGui + ' bài học đã gửi hơn 2 ngày mà chưa thấy trong main (có thể máy chủ đã loại)', 'Báo người phụ trách xem nhánh inbox-loi/ trên GitHub');
+    const cho = ((tt.stdout || '').match(/chờ gửi: (\d+)/) || [])[1];
+    if (cho && +cho > 0) canhBao('Có ' + cho + ' bài học đã duyệt đang chờ gửi lên kho chung', 'Claude sẽ gửi khi bạn đồng ý; hoặc chạy: node tools\\tester\\dong-bo.js gui');
+  }
+
   /* 9. Bài kiểm đăng nhập (tùy chọn) */
   if (SAU) {
     tieuDe('9. Bài kiểm đăng nhập giao diện + API trên dev (mất ~30 giây)');

@@ -57,10 +57,24 @@ if ($isClone) {
 } else {
     if (Test-Path $dest) {
         if (-not (Test-Path (Join-Path $dest 'hooks\guard-easypos.js'))) { Loi ($dest + ' da co nhung khong phai EasyPOS tester kit - dung, khong xoa.'); exit 1 }
+        # Du lieu cua tester (bao cao, tai lieu nghiep vu da luu, kich ban tu viet) KHONG duoc mat khi cai lai tu zip:
+        # sao luu ca e2e\tests + kien-thuc vao ~/.easypos-tester/sao-luu/zip-<gio>, va giu nguyen bao-cao, tai-lieu-nghiep-vu (chuyen ra roi chuyen lai).
+        $gio = Get-Date -Format 'yyyyMMdd-HHmmss'
+        $saoLuu = Join-Path $env:USERPROFILE ('.easypos-tester\sao-luu\zip-' + $gio)
+        New-Item -ItemType Directory -Force -Path $saoLuu | Out-Null
+        foreach ($t in @('e2e\tests', 'kien-thuc')) { if (Test-Path (Join-Path $dest $t)) { Copy-Item -Path (Join-Path $dest $t) -Destination (Join-Path $saoLuu ($t -replace '\\', '_')) -Recurse -Force } }
+        $tam = Join-Path $env:TEMP ('ep-giu-' + $gio)
+        New-Item -ItemType Directory -Force -Path $tam | Out-Null
+        foreach ($d in @('bao-cao', 'tai-lieu-nghiep-vu')) { if (Test-Path (Join-Path $dest $d)) { Move-Item -Path (Join-Path $dest $d) -Destination (Join-Path $tam $d) -Force } }
         Remove-Item -Recurse -Force $dest
     }
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Copy-Item -Path (Join-Path $src '*') -Destination $dest -Recurse -Force
+    if ($tam -and (Test-Path $tam)) {
+        foreach ($d in @('bao-cao', 'tai-lieu-nghiep-vu')) { if (Test-Path (Join-Path $tam $d)) { Remove-Item -Recurse -Force (Join-Path $dest $d) -ErrorAction SilentlyContinue; Move-Item -Path (Join-Path $tam $d) -Destination (Join-Path $dest $d) -Force } }
+        Remove-Item -Recurse -Force $tam -ErrorAction SilentlyContinue
+        Dat ('Da giu nguyen bao-cao, tai-lieu-nghiep-vu; sao luu e2e\tests + kien-thuc o ' + $saoLuu)
+    }
     Get-ChildItem -Path $src -Force -Filter '.*' | Where-Object { $_.Name -ne '.git' } | Copy-Item -Destination $dest -Recurse -Force
     if (-not (Test-Path (Join-Path $dest 'hooks\guard-easypos.js'))) { Loi 'Chep that bai.'; exit 1 }
     Dat ('Da chep vao ' + $dest)

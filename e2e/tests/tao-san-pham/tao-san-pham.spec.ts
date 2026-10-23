@@ -2,75 +2,29 @@
  * Chạy:  cd e2e && npx playwright test tests/tao-san-pham --project=dev [--headed]
  * Hai nhóm chạy TUẦN TỰ: BE (API, form nhiều phần) rồi FE (giao diện). Mọi sản phẩm tạo ra có tên / mã bắt đầu "AUTO_SP_"
  * kèm dấu thời gian. Kịch bản KHÔNG xóa sản phẩm — dọn là test riêng `[DỌN]` chỉ chạy khi đặt EP_DON=1 (và chỉ xóa mềm sản phẩm AUTO_SP_ tạo trong lần chạy này). */
-import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
 import { test, expect } from '../../lib/fixtures';
+import { duLieu, json, thanhCong, thongBao } from '../../lib/api';
+import { boSinhMa } from '../../lib/du-lieu';
+import { dieuKienSanPham as dieuKien, dsTheoTuKhoa, donViCoSan, gia, idSP, taoSP, timTheoMa } from '../../lib/san-pham';
+import { dongHopThoai } from '../../lib/ui';
 
 const DAU = 'AUTO_SP_';
-const HAU_TO = new Date().toISOString().replace(/\D/g, '').slice(4, 14);          // MMddHHmmss — mỗi lần chạy một mã riêng
-const ma = (s: string) => `${DAU}${s}_${HAU_TO}`;
+const { ma, hauTo: HAU_TO } = boSinhMa(DAU);                                      // mỗi lần chạy một mã riêng
 const TRANG_SP = process.env.EP_TRANG_SP || '/easy-pos/product/product';          // đường dẫn màn hình sản phẩm (xác nhận khi chạy thật)
 
 test.describe.configure({ mode: 'serial' });
 
-/* ---------- tiện ích ---------- */
-async function json(r: APIResponse) { return r.json().catch(() => ({})); }
-const duLieu = (b: any) => b?.data ?? b;
-const thanhCong = (r: APIResponse, b: any) => r.status() === 200 && b?.status === true;
-const thongBao = (b: any) => (Array.isArray(b?.message) ? b.message.map((m: any) => m?.message || m?.code).join('; ') : String(b?.message ?? b?.title ?? ''));
-
-/** Tạo sản phẩm qua API (form nhiều phần). Trường undefined bị bỏ. */
-function taoSP(api: APIRequestContext, comId: number | null, f: Record<string, string | number | boolean | undefined>) {
-  const multipart: Record<string, string> = { comId: String(comId) };
-  for (const [k, v] of Object.entries(f)) if (v !== undefined) multipart[k] = String(v);
-  return api.post('client/page/product/create1', { multipart });
-}
-/** Tìm sản phẩm bằng đúng API mà MÀN HÌNH SẢN PHẨM dùng (`category-get-with-paging`, tham số `keyword` tìm theo tên / mã). Trả các dòng có `code2` khớp. */
-async function dsTheoTuKhoa(api: APIRequestContext, tuKhoa: string): Promise<any[]> {
-  const r = await api.get(`client/page/product/category-get-with-paging?page=0&size=20&isWebCall=true&isCountAll=false&keyword=${encodeURIComponent(tuKhoa)}`);
-  const d = duLieu(await json(r));
-  return Array.isArray(d) ? d : (d?.content ?? d?.items ?? []);
-}
-async function timTheoMa(api: APIRequestContext, code2: string): Promise<any[]> {
-  return (await dsTheoTuKhoa(api, code2)).filter(x => String(x?.code2 ?? x?.productCode ?? '') === code2);
-}
-const gia = (sp: any) => Number(sp?.salePrice ?? sp?.outPrice ?? sp?.price);
-const idSP = (sp: any) => sp?.productId ?? sp?.id;
-
-/** Một đơn vị tính CÓ SẴN của công ty (lấy từ sản phẩm đang có) — sản phẩm tạo mới cần đơn vị thì mới hiện trong danh sách. */
-async function donViCoSan(api: APIRequestContext): Promise<{ unit: string; unitId: number }> {
-  const r = await api.get('client/page/product/get-with-paging?page=0&size=50');
-  const d = duLieu(await json(r));
-  const ds: any[] = Array.isArray(d) ? d : (d?.content ?? []);
-  const x = ds.find(s => s?.unit && s?.unitId);
-  test.skip(!x, 'MÔI TRƯỜNG: công ty chưa có sản phẩm nào có đơn vị tính để dùng lại');
-  return { unit: String(x.unit), unitId: Number(x.unitId) };
-}
-
-/** Điều kiện môi trường: đăng nhập API được và gọi được API danh sách sản phẩm (có quyền xem). */
-async function dieuKien(api: APIRequestContext) {
-  const r = await api.get('client/page/product/get-with-paging?page=0&size=1');
-  test.skip(r.status() === 401 || r.status() === 403, `MÔI TRƯỜNG: tài khoản không có quyền với API sản phẩm (HTTP ${r.status()})`);
-}
 const idDaTao: number[] = [];   // id sản phẩm do kịch bản tạo (để dọn nếu được phép)
 async function ghiNhan(api: APIRequestContext, code2: string) {
   for (const sp of await timTheoMa(api, code2)) if (idSP(sp) && !idDaTao.includes(idSP(sp))) idDaTao.push(idSP(sp));
 }
 
-/** Đóng hộp thoại chào / cảnh báo che màn hình sau đăng nhập. */
-async function dongHopThoai(page: Page) {
-  for (let i = 0; i < 4; i++) {
-    const nut = page.locator('.swal2-confirm, .modal.show .btn-close, .modal.show button:has-text("Đóng")').first();
-    if (!(await nut.isVisible().catch(() => false))) break;
-    await nut.click().catch(() => undefined);
-    await page.waitForTimeout(400);
-  }
-}
-
 /* ============================ NHÓM BE (API) ============================ */
-test.describe('BE — API tạo sản phẩm', () => {
+test.describe('BE — API tạo sản phẩm', { tag: ['@api', '@regression'] }, () => {
   const maChinh = ma('001');
 
-  test('[TC-BE-001] Tạo sản phẩm hợp lệ: 200, status true, có trong danh sách', async ({ api, phien }) => {
+  test('[TC-BE-001] Tạo sản phẩm hợp lệ: 200, status true, có trong danh sách', { tag: '@smoke' }, async ({ api, phien }) => {
     await dieuKien(api);
     const dv = await donViCoSan(api);
     const r = await taoSP(api, phien.comId, { name: ma('ten001'), code2: maChinh, salePrice: 15000, inventoryTracking: false, ...dv });
@@ -172,7 +126,7 @@ test.describe('BE — API tạo sản phẩm', () => {
   });
 });
 
-test.describe('BE — quan sát thêm', () => {
+test.describe('BE — quan sát thêm', { tag: ['@api', '@regression'] }, () => {
   test('[TC-BE-009] QUAN SÁT: tạo sản phẩm KHÔNG có đơn vị tính (không theo dõi tồn kho) — có được chấp nhận không? (chỉ chạy khi EP_QUAN_SAT_DON_VI=1)', async ({ api, phien }) => {
     test.skip(process.env.EP_QUAN_SAT_DON_VI !== '1', 'Đã quan sát ở lần chạy đầu: tạo không có đơn vị vẫn thành công (đơn vị = rỗng trong CSDL, sản phẩm SP30). Bật EP_QUAN_SAT_DON_VI=1 để tái hiện — sẽ tạo thêm một sản phẩm AUTO_SP_');
     await dieuKien(api);
@@ -185,7 +139,7 @@ test.describe('BE — quan sát thêm', () => {
 });
 
 /* ============================ NHÓM FE (giao diện) ============================ */
-test.describe('FE — màn hình sản phẩm', () => {
+test.describe('FE — màn hình sản phẩm', { tag: ['@ui', '@regression'] }, () => {
   const maFE = ma('FE002');
 
   test.beforeEach(async ({ page, dangNhapUI, api }) => {
@@ -214,7 +168,7 @@ test.describe('FE — màn hình sản phẩm', () => {
     await page.screenshot({ path: test.info().outputPath('hop-thoai-tao-sp.png') });
   });
 
-  test('[TC-FE-002] Tạo sản phẩm bằng giao diện: tên + mã + giá 15000 → thành công, tìm thấy', async ({ page, api }) => {
+  test('[TC-FE-002] Tạo sản phẩm bằng giao diện: tên + mã + giá 15000 → thành công, tìm thấy', { tag: '@smoke' }, async ({ page, api }) => {
     await moHopThoaiTao(page);
     await page.locator('.modal-dialog input[name="name"]').first().fill(ma('tenFE002'));
     await oMa(page).fill(maFE);
