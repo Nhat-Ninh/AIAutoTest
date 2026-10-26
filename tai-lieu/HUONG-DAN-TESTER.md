@@ -1,4 +1,4 @@
-# Hướng dẫn sử dụng bộ AI Auto Test EasyPOS — dành cho tester mới (Mọi thắc mắc liên hệ NinhHN)
+# Hướng dẫn sử dụng bộ AI Auto Test EasyPOS — dành cho tester (Mọi thắc mắc liên hệ NinhHN)
 
 > Cập nhật 22/10/2026.
 > **Cách dùng tài liệu này:** làm lần lượt Phần 1 → 13. Cứ **sau mỗi giai đoạn lớn có một "CỔNG KIỂM"** — chưa qua cổng thì **đừng sang bước sau**. Phần lớn lỗi của người mới đều là do bỏ qua một điều kiện ở đầu; cổng kiểm bắt lỗi đó sớm.
@@ -192,9 +192,9 @@ Bộ kit đặt sẵn công ty test dev trong `config\moi-truong.json` (hiện l
 **Token (PAT) là gì:** "chìa khoá cá nhân" để công cụ của kit làm việc với Jira / Confluence **nhân danh bạn** — ticket tạo ra có **Reporter là chính bạn**. Mỗi hệ thống một token riêng; token **không bao giờ** vào chat hay lên git.
 
 **Tạo token (làm cho cả Jira và Confluence):**
-1. Bật VPN, đăng nhập `https://jira-sds.softdreams.vn:8080/` (hoặc `https://confluence-sds.softdreams.vn:8090/`).
+1. Bật VPN, đăng nhập `https://jira-sds.softdreams.vn:8080/` và `https://confluence-sds.softdreams.vn:8090/`.
 2. Bấm **avatar** góc trên phải → **Profile** (Jira) / **Settings** (Confluence) → **Personal Access Tokens** → **Create token**.
-3. Đặt tên (vd `easypos-tester-kit`), chọn hạn dùng (vd 90 ngày), **Create**. **Chép token ngay** — chỉ hiện một lần.
+3. Đặt tên (vd `easypos-tester-kit`), chọn hạn dùng (Không hạn), **Create**. **Chép token ngay** — Vì chỉ hiện một lần.
 
 **Ghi token vào máy (tự gõ):** mỗi hệ thống một tệp trong `C:\Users\<bạn>\.easypos-tester\` (do `CAI-DAT.cmd` tạo sẵn, nằm ngoài thư mục bộ kit):
 
@@ -202,6 +202,7 @@ Bộ kit đặt sẵn công ty test dev trong `config\moi-truong.json` (hiện l
 |---|---|
 | `jira.properties` | `jira.token=<token Jira>` |
 | `confluence.properties` | `confluence.token=<token Confluence>` |
+(Nếu chưa thấy confluence.properties thì hãy copy từ thằng jira.properties và đổi tên, đổi nội dung trong file.)
 
 Mở bằng cmd: `code "%USERPROFILE%\.easypos-tester\jira.properties"` (và `confluence.properties`), dán token **sau dấu `=`, không có khoảng trắng**, **Ctrl+S**. Chưa có tệp? Chạy lại `CAI-DAT.cmd`.
 
