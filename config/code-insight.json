@@ -1,0 +1,11 @@
+{
+  "_ghiChu": [
+    "Cong Code-Insight (tools/code-insight): tester doc ma nguon qua cac tool MCP, KHONG can quyen Bitbucket.",
+    "bat=false (mac dinh): kit chay nhu cu, khong co gi thay doi tren may tester.",
+    "Khi admin da dung xong cong: dat bat=true, url=https://<may-chu>:8100/mcp, bo chung chi CONG KHAI cua cong (cong.crt) vao config/code-insight-ca.pem, roi push - may tester tu cap nhat o phien Claude ke tiep.",
+    "Quay lui: dat lai bat=false va push - kit tu go cau hinh MCP + chung chi tren may tester."
+  ],
+  "bat": true,
+  "url": "https://10.100.110.233:8443/mcp",
+  "caFile": "config/code-insight-ca.pem"
+}

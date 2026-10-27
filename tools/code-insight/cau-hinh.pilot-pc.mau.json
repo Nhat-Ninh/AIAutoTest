@@ -1,0 +1,29 @@
+{
+  "_ghiChu": "MAU cau hinh PILOT chay tren chinh may Windows cua nguoi phu trach (xem tai-lieu/HUONG-DAN-CODE-INSIGHT-DON-GIAN.md, Giai doan A). Chep thanh C:/insight-pilot/cau-hinh.json (NGOAI thu muc git). Chi nghe 127.0.0.1 (http), KHONG cho may khac noi. KHONG de khoa API trong tep nay.",
+  "lang": { "cong": 8100, "diaChi": "127.0.0.1", "tls": { "cert": "", "key": "" }, "choPhepHttp": true },
+  "jira": { "url": "https://jira-sds.softdreams.vn:8080", "boQuaKiemChungChi": true, "caFile": "" },
+  "quyen": { "kieu": "danh-sach", "duAn": "EPB", "quyen": "CREATE_ISSUES", "danhSach": ["<ten-dang-nhap-jira-cua-ban>"] },
+  "repo": ["easyposbackend", "easypos-gateway-cloud", "easypos-product-material", "easypos-report", "easyposecommerce", "easypos-account", "easyposasync", "easypos-audit", "easypos-bank", "easypos-bill", "easypos-etl", "easypos-integration-gas", "invoice-service-ei", "invoice-service-gas", "invoice-service-vte", "easypos-pharma", "easypos-tax-integration", "easypos-transhub"],
+  "banChup": { "thuMuc": "C:/insight-pilot/snap" },
+  "worker": {
+    "lenh": ["node", "tools/code-insight/worker-claude.js"],
+    "hetGioMs": 240000,
+    "byteToiDa": 1048576,
+    "song": 1,
+    "hangDoiToiDa": 5,
+    "claude": {
+      "lenh": "claude",
+      "bare": true,
+      "model": "",
+      "maxTurns": 15,
+      "maxBudgetUsd": 0.5,
+      "docker": { "bat": true, "anh": "insight-worker:latest", "mang": "", "bonNho": "4g", "cpu": "2" }
+    }
+  },
+  "gioiHan": { "yeuCauMoiPhut": 20, "yeuCauMoiNgay": 150, "workerMoiNgay": 30, "byteMoiNgay": 600000, "dongThoiMoiNguoi": 2 },
+  "loc": { "chuoiToiDa": 400, "tongToiDa": 8000, "soCheToiDa": 8, "tiLeCheToiDa": 0.4 },
+  "cache": { "thuMuc": "C:/insight-pilot/data/cache", "hanGio": 168 },
+  "chiMuc": { "thuMuc": "C:/insight-pilot/data/chi-muc", "n": 6 },
+  "nhatKy": "C:/insight-pilot/data/nhat-ky.log",
+  "trangThaiHanMuc": "C:/insight-pilot/data/han-muc.json"
+}

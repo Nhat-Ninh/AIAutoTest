@@ -25,6 +25,8 @@ fs.writeFileSync(path.join(dir, 'goi-prod.js'), "fetch('https://app.easyposs.vn/
 fs.writeFileSync(path.join(dir, 'vo-hai.js'), "console.log('xin chao');\n");
 process.env.EP_GUARD_CONFIG = path.join(dir, 'moi-truong.json');
 process.env.EP_GUARD_NOLOG = '1';
+// Cổng Code-Insight: các ca thường chạy với cổng TẮT (không phụ thuộc config/code-insight.json thật của máy đang chạy bộ thử).
+const CI_TAT = path.join(dir, 'code-insight-tat.json'); fs.writeFileSync(CI_TAT, JSON.stringify({ bat: false, url: '' })); process.env.EP_CI_CAU_HINH = CI_TAT;
 const { decide } = require('./guard-easypos.js');
 const prod = require('./prod-config.js');
 
@@ -138,7 +140,8 @@ const cases = [
   // ---- tệp chạy được đọc nội dung
   ['python chạy tệp có pyodbc ⇒ chặn', bash(`python ${path.join(dir, 'doc-db.py').replace(/\\/g, '/')}`), 'deny'],
   ['node chạy tệp gọi prod ⇒ chặn', bash(`node ${path.join(dir, 'goi-prod.js').replace(/\\/g, '/')}`), 'deny'],
-  ['node chạy tệp vô hại ⇒ cho', bash(`node ${path.join(dir, 'vo-hai.js').replace(/\\/g, '/')}`), 'allow'],
+  ['node chạy bộ thử của code-insight (script tin cậy của kit, có chuỗi mẫu jdbc:) ⇒ cho', bash(`node "${K('tools', 'code-insight', 'loc.test.js').replace(/\\/g, '/')}"`), 'allow'],
+  ['node chạy tệp vô hại ⇒ cho',bash(`node ${path.join(dir, 'vo-hai.js').replace(/\\/g, '/')}`), 'allow'],
   ['python chạy tệp không tồn tại ⇒ cho (không đọc được)', bash('python /khong/co/tep.py'), 'allow'],
   // ---- ghi tệp
   ['Write kịch bản e2e bình thường', write(K('e2e', 'tests', 'don-hang', 'tao-don.spec.ts'), "import { test, expect } from '../../lib/fixtures';\ntest('[TC-FE-001] mở', async ({ page }) => { await page.goto('/'); });"), 'allow'],
@@ -171,6 +174,32 @@ for (const [ten, input, mong] of cases) {
   const ok = thuc === mong;
   if (!ok) sai++;
   console.log((ok ? 'ĐÚNG ' : 'SAI  ') + mong.padEnd(5) + '← ' + thuc.padEnd(5) + '| ' + ten);
+}
+
+/* ---- cổng đọc mã Code-Insight: TẮT (mặc định) không đổi hành vi; BẬT thì cấm gọi thẳng Bitbucket ---- */
+{
+  const BB_URL = 'https://git-sds.softdreams.vn/rest/api/1.0/projects/EPOS/repos';
+  const congCases = [
+    ['curl Bitbucket', bash(`curl -s -H "Authorization: Bearer x" ${BB_URL}`)],
+    ['Invoke-RestMethod Bitbucket', ps(`Invoke-RestMethod ${BB_URL}`)],
+    ['git clone Bitbucket', bash('git clone https://git-sds.softdreams.vn/scm/epos/easyposbackend.git')],
+    ['git ls-remote Bitbucket', bash('git ls-remote https://git-sds.softdreams.vn/scm/epos/easyposbackend.git')],
+  ];
+  const cfgCI = path.join(dir, 'code-insight.json');
+  const quyet = (input) => { const r = decide(input); return r ? r.hookSpecificOutput.permissionDecision : 'allow'; };
+  const kiemCa = (ten, thuc, mong) => { const ok = thuc === mong; if (!ok) sai++; console.log((ok ? 'ĐÚNG ' : 'SAI  ') + ten + ' ← ' + thuc); };
+
+  fs.writeFileSync(cfgCI, JSON.stringify({ bat: false, url: '' })); process.env.EP_CI_CAU_HINH = cfgCI;
+  for (const [ten, input] of congCases) kiemCa('[cổng tắt] không chặn thêm: ' + ten, quyet(input) === 'deny' ? 'deny' : 'khong-chan', 'khong-chan');
+  fs.writeFileSync(cfgCI, JSON.stringify({ bat: true, url: '' })); kiemCa('[cổng bat=true nhưng url rỗng ⇒ coi là tắt] curl Bitbucket', quyet(congCases[0][1]) === 'deny' ? 'deny' : 'khong-chan', 'khong-chan');
+  fs.writeFileSync(cfgCI, JSON.stringify({ bat: true, url: 'https://10.0.0.5:8100/mcp' }));
+  for (const [ten, input] of congCases) kiemCa('[cổng bật] CHẶN: ' + ten, quyet(input), 'deny');
+  kiemCa('[cổng bật] git clone GitHub không liên quan vẫn cho', quyet(bash('git clone https://github.com/Nhat-Ninh/AIAutoTest.git')), 'allow');
+  kiemCa('[cổng bật] chạy bộ thử của code-insight vẫn cho (script tin cậy)', quyet(bash(`node "${K('tools', 'code-insight', 'server.test.js').replace(/\\/g, '/')}"`)), 'allow');
+  kiemCa('[cổng] sửa config/code-insight.json ⇒ hỏi', quyet(edit(K('config', 'code-insight.json'))), 'ask');
+  kiemCa('[cổng] sửa .mcp.json của kit ⇒ hỏi', quyet(edit(K('.mcp.json'))), 'ask');
+  kiemCa('[cổng] sed -i sửa công cụ cổng ⇒ hỏi', quyet(bash('sed -i "s/true/false/" tools/code-insight/cau-hinh.mau.json')), 'ask');
+  process.env.EP_CI_CAU_HINH = CI_TAT;
 }
 
 /* ---- cấu hình PROD giả: so khớp ---- */

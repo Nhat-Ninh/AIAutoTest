@@ -17,7 +17,9 @@ báo cáo + lỗi theo mẫu Jira (`EPB-…`). Hook chặn nối CSDL trực ti�
 | `hooks/` | `guard-easypos.js` (hook chặn) + `guard-easypos.test.js` (bộ thử), `prod-config.js` (danh sách prod dùng chung), `session-rules.js` (nạp luật) |
 | `rules/RULES.md` | Luật làm việc + quy trình 7 bước |
 | `mau-bao-cao/` | Mẫu báo cáo từng bước 00 → 06 |
-| `tools/tester/` | `dbq.js` (đọc CSDL, chỉ SELECT), `bb.js` (đọc Bitbucket project EPOS), `kiem-trinh-duyet.js` |
+| `tools/tester/` | `dbq.js` (đọc CSDL, chỉ SELECT), `bb.js` (đọc Bitbucket project EPOS; khi bật Code-Insight thì dùng tool MCP thay thế), `code-insight-cai.js` / `code-insight-header.js` (nối cổng đọc mã cho máy tester), `kiem-trinh-duyet.js` |
+| `CAI-CODE-INSIGHT.cmd` | Bấm đúp để cài / kiểm cổng Code-Insight trên máy tester (tự kiểm, tự nối cấu hình, báo OK / cảnh báo / lỗi + việc cần làm) |
+| `tools/code-insight/` | Code-Insight: cổng MCP + worker + bộ lọc để tester dùng AI phân tích mã nguồn mà KHÔNG có quyền Bitbucket (bản tóm tắt, không mã nguyên văn). Hướng dẫn admin: `tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md` mục D15. Mặc định TẮT (`config/code-insight.json`) |
 | `tools/jira/jira.js` | Đọc ticket Jira |
 | `kien-thuc/` + `tools/tester/bai-hoc.js` | **Kho bài học chung** (bẫy kỹ thuật, sự thật môi trường, lỗi đã biết, nghiệp vụ): Claude tra trước khi làm, đề xuất bài mới sau khi làm (Bước 6c) — kit càng test càng khôn. Xem `kien-thuc/README.md` |
 | `tools/tester/dong-bo.js` + `config/dong-bo.json` | **Tự đồng bộ kit với nhánh `main`**, không conflict (sao lưu rồi đưa về main khi có gì lạ), cổng "kit phải mới" trước mỗi lượt chạy test, gửi bài học lên kho chung; tester không dùng git. Máy người phụ trách đặt vai trò `phu-trach` để không bao giờ bị ghi đè |

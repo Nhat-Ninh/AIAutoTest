@@ -79,7 +79,7 @@ Cài Node xong mà `node -v` báo `'node' is not recognized` → **đóng cmd, m
 ### 2.2 Quyền truy cập — xin trước, đỡ mất thời gian
 Xin người phụ trách:
 - **Quyền đọc repo bộ kit** `https://github.com/Nhat-Ninh/AIAutoTest.git` (repo riêng tư: bạn cần được mời làm thành viên và đăng nhập GitHub khi Git hỏi). Có thể link/ tên repo thay đổi — dùng link người phụ trách gửi.
-- **(Nên có) Quyền ĐỌC Bitbucket project `EPOS`** (`https://git-sds.softdreams.vn:7990/`). **Không cần để clone bộ kit** (bộ kit nằm ở GitHub) — nhưng ở **Bước 1 (phân tích)**, Claude đọc mã nguồn EasyPOS (`easypos-frontend`, `easyposbackend`, `easypos-product-material`…) bằng công cụ `bb.js`, công cụ này dùng quyền Bitbucket của bạn (chỉ GET, không sửa gì). Không có quyền này: phân tích bằng **tài liệu** (tệp testcase, Jira, Confluence xuất PDF) thay vì "từ code", hoặc mở sẵn thư mục mã nguồn trong VS Code nếu bạn đã có. Để `bb.js` chạy **không cần tạo token**: đăng nhập Bitbucket **một lần** bằng Git trên máy (Phần 6.5). (Ai thích dùng token chỉ-đọc thì đặt trong `~\.easypos-tester\git.properties` — tùy chọn, không bắt buộc.)
+- **(Nên có) Đọc được mã nguồn.** Nếu người phụ trách đã bật **cổng Code-Insight** (Phần 6.5) thì bạn **không cần quyền Bitbucket**, chỉ cần token Jira (Phần 6.4). Nếu cổng chưa bật, làm theo mục dưới đây: **Quyền ĐỌC Bitbucket project `EPOS`** (`https://git-sds.softdreams.vn:7990/`). **Không cần để clone bộ kit** (bộ kit nằm ở GitHub) — nhưng ở **Bước 1 (phân tích)**, Claude đọc mã nguồn EasyPOS (`easypos-frontend`, `easyposbackend`, `easypos-product-material`…) bằng công cụ `bb.js`, công cụ này dùng quyền Bitbucket của bạn (chỉ GET, không sửa gì). Không có quyền này: phân tích bằng **tài liệu** (tệp testcase, Jira, Confluence xuất PDF) thay vì "từ code", hoặc mở sẵn thư mục mã nguồn trong VS Code nếu bạn đã có. Để `bb.js` chạy **không cần tạo token**: đăng nhập Bitbucket **một lần** bằng Git trên máy (Phần 6.5). (Ai thích dùng token chỉ-đọc thì đặt trong `~\.easypos-tester\git.properties` — tùy chọn, không bắt buộc.)
 - **Tài khoản EasyPOS dữ liệu giả cho môi trường dev**, đã **tắt OTP**, và biết **tài khoản đó vào được công ty nào** (Phần 6.3).
 - **Tài khoản đọc CSDL dev** (user / mật khẩu) — người phụ trách sẽ hướng dẫn.
 - Quyền vào **Jira** (`https://jira-sds.softdreams.vn:8080/`, project **EPB**, có quyền **tạo issue và đính kèm tệp**) và **Confluence** (`https://confluence-sds.softdreams.vn:8090/`, đọc được space **EP — EasyPos**). Bạn sẽ tạo **token cá nhân (PAT)** ở Phần 6.4.
@@ -212,7 +212,29 @@ Mở bằng cmd: `code "%USERPROFILE%\.easypos-tester\jira.properties"` (và `co
 
 **Không có token thì sao?** Kit **vẫn chạy test bình thường**. Chỉ khác: không tự tạo được ticket (bạn tạo tay theo Phần 12.5-B) và không tự lấy được tài liệu Confluence (đưa tài liệu cho Claude bằng PDF / Word, hoặc chọn loại kiểm thử **kỹ thuật**, Phần 8.3).
 
-### 6.5 Đăng nhập Bitbucket một lần (để Claude đọc được mã nguồn — KHÔNG cần token)
+### 6.5 Đọc mã nguồn cho Claude (hai chế độ: cổng Code-Insight hoặc Bitbucket trực tiếp)
+
+> **Chế độ CỔNG Code-Insight (khi người phụ trách đã bật — bạn không phải làm gì ngoài token Jira ở 6.4).** Kit tự nhận biết qua `config/code-insight.json`. Khi bật, Claude đọc mã nguồn bằng **4 tool MCP** (`phan_tich_jira`, `giai_thich_luong`, `liet_ke_api`, `bang_db_lien_quan`) qua một server nội bộ, xác thực bằng **token Jira của chính bạn**. Bạn **không cần quyền Bitbucket**, không cần đăng nhập Git. Điều cần biết:
+> - Kết quả là **bản tóm tắt** (luồng, API, bảng CSDL, rủi ro, gợi ý test) kèm **bản mã** `repo@commit` — **không có mã nguyên văn**. Hỏi "in nguyên file X" hoặc đòi cấu hình / mật khẩu sẽ bị từ chối; đừng cố lách. Ghi `bản mã` vào báo cáo Bước 1.
+> - Có **hạn mức mỗi ngày**; hỏi lại đúng câu đã hỏi thì lấy từ cache, không tốn lượt. Mọi lượt hỏi đều được ghi nhật ký (ai · hỏi gì).
+> - Mã đọc là **mã đang chạy trên DEV** (do Jenkins xuất ra sau mỗi lần build DEV). `bb.js` (đọc Bitbucket trực tiếp, PR, so sánh nhánh) **không dùng ở chế độ này**.
+> - Lần đầu bật, Claude Code hỏi **cho phép máy chủ MCP `code-insight`** của kit: chọn cho phép. Nếu thấy tool chưa hiện sau khi kit cập nhật: **mở phiên Claude MỚI**.
+> - **Bấm đúp `CAI-CODE-INSIGHT.cmd`** (sau khi kit cập nhật): kit tự kiểm kit mới, Node, Claude Code, chứng chỉ, token Jira, mạng tới cổng, nối cấu hình vào Claude và thử gọi cổng; báo `[OK]` / `[!]` / `[X]` kèm việc cần làm. Lỗi thì gửi người phụ trách tệp `~.easypos-testercai-code-insight.log` (không chứa token).
+> - Kiểm: `KIEM-TRA-MAY.cmd` mục **8c** báo `[OK] Cổng Code-Insight`. Lỗi thường gặp:
+>
+> | Thông báo (mục 8c / khi gọi tool) | Nghĩa | Xử lý |
+> |---|---|---|
+> | "Chưa có token Jira" | thiếu PAT | Làm Phần 6.4 |
+> | "Cổng từ chối token Jira (401)" | PAT sai / hết hạn | Tạo lại PAT, ghi vào `jira.properties` |
+> | "chưa được phép dùng cổng (403)" | tài khoản chưa có quyền tạo ticket dự án EPB (cổng dựa vào quyền này) | Nhờ người phụ trách cấp quyền |
+> | "429" / "Hết hạn mức…" | hết hạn mức hôm nay / quá nhanh | Chờ; hỏi cụ thể hơn |
+> | "Không nối được cổng" | VPN / mạng, hoặc cổng đang tắt | Kiểm VPN; báo người phụ trách |
+> | "Không tin chứng chỉ của cổng" | thiếu chứng chỉ công khai của cổng trong kit | Báo người phụ trách (họ cần `config/code-insight-ca.pem`) |
+> | "Kết quả bị bộ lọc an toàn từ chối" | câu hỏi đòi mã / cấu hình, hoặc kết quả có đoạn giống mã | Hỏi lại bằng lời, về luồng / quy tắc |
+>
+> Phần dưới đây (6.5.1) chỉ dùng khi cổng **chưa** được bật (`"bat": false`).
+
+#### 6.5.1 Khi cổng CHƯA bật: đăng nhập Bitbucket một lần (KHÔNG cần token)
 
 **Để làm gì:** ở Bước 1 (phân tích), Claude đọc mã nguồn EasyPOS trên Bitbucket bằng công cụ `tools\tester\bb.js` (chỉ đọc, không tải repo về máy). Công cụ này **tự dùng tài khoản Bitbucket mà Git trên máy đã lưu** — bạn chỉ cần để Git đăng nhập **một lần**. Không phải tạo token, không phải điền tệp nào.
 
@@ -260,7 +282,7 @@ git ls-remote https://git-sds.softdreams.vn:7990/scm/epos/easypos-gateway-cloud.
 | 7. CSDL | Đọc được `easyposbackoffice` | Sai mật khẩu CSDL / VPN. **Đừng thử lại liên tục** (có thể bị khoá) |
 | 8. Hook | Đã cài hook, `EP_KIT` đúng thư mục | `CAI-DAT.cmd` → Reload Window |
 | 8b. Jira / Confluence | Token dùng được, có quyền tạo ticket | Tạo / ghi lại token (Phần 6.4). Chỉ là cảnh báo `[!]`, không chặn |
-| 8c. Bitbucket | `bb.js repo` đọc được danh sách repo EPOS | Đăng nhập Git một lần (Phần 6.5); xin quyền đọc EPOS. Chỉ là cảnh báo `[!]`, không chặn |
+| 8c. Cổng Code-Insight / Bitbucket | Cổng bật: nối được cổng bằng token Jira. Cổng tắt: `bb.js repo` đọc được danh sách repo EPOS | Cổng bật: token Jira (6.4) + bảng lỗi ở 6.5. Cổng tắt: đăng nhập Git một lần (6.5.1) + xin quyền đọc EPOS. Chỉ là cảnh báo `[!]`, không chặn |
 | 8d. Kho bài học | `bai-hoc.js kiem`: định dạng, bằng chứng, bí mật của `kien-thuc\` | `CAP-NHAT.cmd`; vẫn lỗi thì báo người phụ trách. Chỉ là cảnh báo `[!]` |
 | 8e. Kit tự cập nhật | `dong-bo.js kiem`: kit đã theo kịp nhánh `main`; hộp thư bài học còn gì | Mã 10: `dong-bo.js cap-nhat`; mã 11: mạng / đăng nhập GitHub (`git fetch` một lần); mã 12: báo người phụ trách. Cảnh báo `[!]` không chặn; `[X]` thì lệnh chạy test sẽ bị chặn |
 | 9. Đăng nhập thật (`--sau`) | 3 bài kiểm đăng nhập giao diện + API | Xem bảng lỗi Phần 13 |

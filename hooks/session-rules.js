@@ -33,6 +33,15 @@ try {
   }
 } catch (e) { /* đồng bộ chỉ là thêm; lỗi thì bỏ qua, cổng ở lệnh chạy test vẫn kiểm */ }
 
+// Cổng đọc mã Code-Insight (mặc định TẮT — config/code-insight.json bat=false thì không làm gì): khớp .mcp.json / chứng chỉ với cấu hình, bật thì nhắc dùng tool MCP thay bb.js.
+let codeInsight = '';
+try {
+  const ci = require('../tools/tester/code-insight-cai');
+  const bat = ci.cauHinh().bat; const viec = ci.apDung({});
+  if (bat) codeInsight = 'Đọc mã nguồn: dùng tool MCP `code-insight` (phan_tich_jira · giai_thich_luong · liet_ke_api · bang_db_lien_quan) — trả BẢN TÓM TẮT, không có mã nguyên văn; KHÔNG dùng bb.js / git với Bitbucket. Ghi "bản mã" (repo@commit) trong kết quả vào báo cáo.' + (viec.length ? ' (Vừa cập nhật cấu hình MCP: nếu tool chưa hiện, mở phiên Claude MỚI.)' : '');
+  else if (viec.some(x => /^gỡ/.test(x))) codeInsight = 'Cổng đọc mã Code-Insight đã TẮT: kit vừa gỡ cấu hình MCP; đọc mã bằng bb.js như trước.';
+} catch (e) { /* cổng chỉ là thêm; lỗi thì bỏ qua */ }
+
 // Bài học đã duyệt đang chờ gửi lên kho chung (hộp thư ngoài thư mục kit).
 let choGui = 0;
 try { choGui = fs.readdirSync(path.join(process.env.EP_STATE_DIR || path.join(os.homedir(), '.easypos-tester'), 'bai-hoc-cho-gui')).filter(f => f.endsWith('.md')).length; } catch (e) { /* chưa có hộp thư */ }
@@ -53,6 +62,7 @@ const dong = [
   '- Kho bài học chung: ' + soBai + ' bài (bẫy kỹ thuật, sự thật môi trường, lỗi đã biết, nghiệp vụ). TRA bằng `bai-hoc.js tim <từ khoá>`, đừng đọc cả `kien-thuc/`.',
   '- Báo cáo: `$EP_KIT/bao-cao/<ngày>_<chức năng>/` theo mẫu `mau-bao-cao/`.',
   '- Kit TỰ ĐỒNG BỘ với nhánh main (tester không dùng git): mọi lệnh chạy test đều qua cổng "kit phải mới"; bài học đã duyệt gửi bằng `node "$EP_KIT/tools/tester/dong-bo.js" gui` (hook hỏi xác nhận). Đừng chạy git commit / push / pull.',
+  codeInsight ? '- ' + codeInsight : '',
   dongBo ? '- Đồng bộ kit lúc mở phiên: ' + dongBo : '',
   choGui ? '- ⚠ Có ' + choGui + ' bài học đã duyệt đang chờ gửi lên kho chung: hỏi tester rồi chạy `node "$EP_KIT/tools/tester/dong-bo.js" gui`.' : '',
   '',

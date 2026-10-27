@@ -1,0 +1,20 @@
+# Mạng cô lập cho worker: "insight-egress" là mạng internal (không có đường ra internet); proxy squid bắc cầu và chỉ cho đi tới API của LLM.
+#   docker compose -f tools/code-insight/egress/docker-compose.yml up -d
+# Dịch vụ cổng đặt HTTPS_PROXY=http://insight-proxy:3128 trong môi trường (worker-claude.js chuyển tên biến này vào container worker).
+# Nếu máy chủ phải đi ra internet qua proxy công ty: thêm "cache_peer <proxy công ty> parent <cổng> 0 no-query default" + "never_direct allow all" vào squid.conf.
+services:
+  insight-proxy:
+    image: ubuntu/squid:latest
+    container_name: insight-proxy
+    restart: unless-stopped
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      - insight-egress
+      - ra-ngoai
+networks:
+  insight-egress:
+    name: insight-egress
+    internal: true
+  ra-ngoai:
+    name: insight-ra-ngoai

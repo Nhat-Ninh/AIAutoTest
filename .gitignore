@@ -19,6 +19,9 @@ e2e/package-lock.json
 e2e/test-results/
 e2e/playwright-report/
 
+# Cấu hình MCP cục bộ do kit tự sinh theo config/code-insight.json (cổng đọc mã) — mỗi máy một bản
+.mcp.json
+
 # Tài liệu nghiệp vụ lấy từ Confluence (nội dung nội bộ) — chỉ nằm trên máy tester
 tai-lieu-nghiep-vu/
 

@@ -44,6 +44,16 @@ const DB_CLIENT_RE = /\b(sqlcmd|osql|bcp|Invoke-Sqlcmd|SqlConnection|SqlClient|m
 const HTTP_WORD_RE = /\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm|requests|urllib|axios|fetch|httpie|ncat|telnet|Test-NetConnection|ssh|scp|sftp|ftp)\b|\bnc\s/i;
 const WRITE_HTTP_RE = /(-X\s*['"]?(POST|PUT|DELETE|PATCH)\b|--request\s+['"]?(POST|PUT|DELETE|PATCH)\b|\s-(d|F)\s|--data(-raw|-binary|-urlencode)?\b|-Method\s+['"]?(Post|Put|Delete|Patch)\b|requests\.(post|put|delete|patch)\b|method\s*[:=]\s*['"](POST|PUT|DELETE|PATCH)['"])/i;
 const TEAM_TOOL_HOST_RE = /(jira-sds|git-sds|confluence-sds)\.softdreams\.vn/i;
+// CỔNG ĐỌC MÃ Code-Insight (tools/code-insight): khi đã BẬT, mã nguồn chỉ được đọc qua tool MCP `code-insight` (có lọc, hạn mức, nhật ký). Claude KHÔNG
+// được gọi thẳng máy chủ Bitbucket (curl / git clone / script) — làm vậy là lách cổng. Cổng tắt (mặc định) thì không áp luật này.
+const BITBUCKET_HOST_RE = /git-sds\.softdreams\.vn/i;
+const GIT_DOC_TU_XA_RE = /\bgit(\.exe)?\s+(-\S+\s+(\S+\s+)?)*(clone|ls-remote|fetch|archive|remote\s+add|submodule)\b/i;
+function codeInsightBat() {
+  try {
+    const c = JSON.parse(fs.readFileSync(process.env.EP_CI_CAU_HINH || path.join(KIT, 'config', 'code-insight.json'), 'utf8').replace(/^﻿/, ''));
+    return c.bat === true && !!String(c.url || '').trim();
+  } catch (e) { return false; }
+}
 const PROD_PROFILE_RE = /(spring\.profiles\.active\s*=\s*['"]?prod\b|SPRING_PROFILES_ACTIVE\s*=\s*['"]?prod\b|-Pprod\b|spring-boot\.run\.profiles\s*=\s*prod\b|--spring\.profiles\.active\s*=\s*prod\b)/i;
 const PROD_FLAG_RE = /\bEP_(CHO_PHEP_PROD|PROD_CHO_GHI)\b/;
 // Đồng bộ kit tự động (tools/tester/dong-bo.js): chặn đường vòng. Bỏ qua cổng cập nhật, git ghi tay, gửi bài / ghi đè kit đều phải được hỏi.
@@ -59,7 +69,7 @@ const canDongBo = (cmd, cwd) => {
   const trongKit = (p) => { const f = fwd(p).toLowerCase(); return f === KIT_F || f.startsWith(KIT_F + '/'); };
   return trongKit(cwd || '') || fwd(c).toLowerCase().includes(KIT_F) || /\$EP_KIT|%EP_KIT%|\$env:EP_KIT/i.test(c) || /easypos-tester/i.test(c);
 };
-const PROTECTED_NAME_RE = /(guard-easypos(\.test)?\.js|prod-config\.js|hooks\.json|session-rules\.js|RULES\.md|moi-truong\.json|settings(\.local)?\.json|setup\.js|plugin\.json|marketplace\.json|dbq\.js|bai-hoc\.js|bai-hoc-lib\.js|bi-mat\.js|dong-bo\.js|dong-bo\.json|nhan-bai-hoc\.(js|yml)|toan-cuc\.ts|QUY-TRINH\.md|jira-tao\.js|confluence\.js|atlassian\.js|jira\.json|kiem-tra-may\.js|cai-dat\.ps1|cap-nhat\.ps1)/i;
+const PROTECTED_NAME_RE = /(guard-easypos(\.test)?\.js|prod-config\.js|hooks\.json|session-rules\.js|RULES\.md|moi-truong\.json|settings(\.local)?\.json|setup\.js|plugin\.json|marketplace\.json|dbq\.js|bai-hoc\.js|bai-hoc-lib\.js|bi-mat\.js|dong-bo\.js|dong-bo\.json|nhan-bai-hoc\.(js|yml)|toan-cuc\.ts|QUY-TRINH\.md|jira-tao\.js|confluence\.js|atlassian\.js|jira\.json|kiem-tra-may\.js|cai-dat\.ps1|cap-nhat\.ps1|code-insight)/i;
 const SHELL_WRITE_RE = /(\bsed\s+-i|\btee\b|>>?\s*["']?[\w./\\$~-]|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b|\bRemove-Item\b|\brm\s|\bdel\s|\bmv\s|\bmove\s|\bcp\s|\bcopy\s|\bcopy-item\b|\bmove-item\b|\bgit\s+(checkout|restore|reset)\b|disableAllHooks)/i;
 const CODE_FILE_RE = /\.(ts|tsx|js|mjs|cjs|py|sh|ps1|cmd|bat|java|rb|pl)$/i;
 const SCRIPT_RUN_RE = /\b(?:python3?|py|node|bash|sh|pwsh|powershell(?:\.exe)?|ruby|perl)\b(?:\s+-[A-Za-z]+)*\s+["']?([^\s"'|;&<>]+\.(?:py|js|mjs|cjs|sh|ps1|rb|pl))["']?/gi;
@@ -88,7 +98,7 @@ const isDbq = (tok, cwd) => KIT_VAR_RE.test(tok) ? /tools[\\/]tester[\\/]dbq\.js
 function isTrustedScript(tok, cwd) {
   if (KIT_VAR_RE.test(tok)) return true;
   const r = kitRel(resolvePath(tok, cwd));
-  return !!r && /^(tools\/(tester|jira|confluence)\/[\w.-]+\.js|setup\.js|hooks\/[\w.-]+\.js)$/.test(r);
+  return !!r && /^(tools\/(tester|jira|confluence|code-insight)\/[\w.-]+\.js|setup\.js|hooks\/[\w.-]+\.js)$/.test(r);
 }
 function readText(f) {
   try { if (fs.statSync(f).size > 2 * 1024 * 1024) return null; return fs.readFileSync(f, 'utf8'); } catch (e) { return null; }
@@ -114,6 +124,8 @@ function protectedWrite(abs) {
   if (/^(hooks|rules|tools|lib|\.claude-plugin)\//.test(r) || r === 'setup.js') return 'hook / luật / công cụ của bộ kit';
   if (/^e2e\/(lib\/|playwright\.config\.ts$|package\.json$)/.test(r)) return 'chốt chặn prod và fixture của Playwright';
   if (r === 'config/moi-truong.json') return 'cấu hình môi trường và danh sách PROD';
+  if (r === 'config/code-insight.json' || r === 'config/code-insight-ca.pem') return 'cấu hình cổng đọc mã (địa chỉ / chứng chỉ của cổng)';
+  if (r === '.mcp.json') return 'cấu hình MCP của kit (cổng đọc mã)';
   return null;
 }
 
@@ -190,6 +202,9 @@ function decideShell(cmd, cwd) {
   }
   const prodHost = prodHostIn(cmd, cfg);
   if (prodHost) return deny('Lệnh gọi mạng tới máy PROD (' + prodHost + '). Chỉ test trên TEST / UAT.');
+  if (BITBUCKET_HOST_RE.test(cmd) && (HTTP_WORD_RE.test(cmd) || GIT_DOC_TU_XA_RE.test(cmd)) && codeInsightBat()) {
+    return deny('Cổng đọc mã Code-Insight đang BẬT: không gọi thẳng máy chủ Bitbucket (git-sds) bằng curl / git / script. Đọc mã bằng tool MCP code-insight (phan_tich_jira, giai_thich_luong, liet_ke_api, bang_db_lien_quan).');
+  }
   if (TEAM_TOOL_HOST_RE.test(cmd) && HTTP_WORD_RE.test(cmd) && WRITE_HTTP_RE.test(cmd)) {
     return ask('Lệnh GHI (POST / PUT / DELETE) lên Jira / Bitbucket / Confluence — người cả nhóm nhìn thấy. Soạn nháp, người dùng duyệt trước khi tạo / sửa.');
   }

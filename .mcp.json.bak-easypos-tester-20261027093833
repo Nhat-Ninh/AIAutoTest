@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "code-insight": {
+      "type": "http",
+      "url": "https://10.100.110.233:8443/mcp",
+      "headersHelper": "node \"C:/easypos-tester-kit/tools/tester/code-insight-header.js\""
+    }
+  }
+}

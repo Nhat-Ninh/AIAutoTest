@@ -1,0 +1,21 @@
+# Ánh xạ: <tên thư mục workspace Jenkins>  <tên repo trong cổng Code-Insight>
+# Thư mục workspace lấy từ /opt/dev/jenkins/jenkins/workspace/dev-pos/ (ảnh chụp 27/10/2026). Tên bên phải: chữ thường, số, _ . - (tuỳ bạn đặt; tester sẽ thấy tên này).
+# Chép thành ~/insight/anh-xa.txt rồi sửa: xoá dòng của repo chưa muốn mở cho tester, đổi tên nếu muốn. Thêm repo mới = thêm một dòng.
+easypos-dev-backend            easyposbackend
+easypos-dev-gateway            easypos-gateway-cloud
+easypos-dev-product-material   easypos-product-material
+easypos-dev-report             easypos-report
+easypos-dev-ecommerce          easyposecommerce
+easypos-dev-account            easypos-account
+easypos-dev-async              easyposasync
+easypos-dev-audit              easypos-audit
+easypos-dev-bank               easypos-bank
+easypos-dev-bill               easypos-bill
+easypos-dev-etl                easypos-etl
+easypos-dev-integration-gas    easypos-integration-gas
+easypos-dev-invoice-ei         invoice-service-ei
+easypos-dev-invoice-gas        invoice-service-gas
+easypos-dev-invoice-vte        invoice-service-vte
+easypos-dev-pharma             easypos-pharma
+easypos-dev-tax-integration    easypos-tax-integration
+easypos-dev-transhub           easypos-transhub

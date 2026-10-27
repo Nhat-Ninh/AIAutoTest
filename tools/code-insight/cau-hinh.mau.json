@@ -1,0 +1,33 @@
+{
+  "_ghiChu": "MAU cau hinh cong Code-Insight. Chep thanh tep RIENG tren may chu (NGOAI thu muc git), dien lai, roi chay: node tools/code-insight/server.js --cau-hinh <tep> --kiem. KHONG de khoa API / token trong tep nay: khoa API (ANTHROPIC_API_KEY) nam trong BIEN MOI TRUONG cua dich vu.",
+  "lang": {
+    "cong": 8100,
+    "tls": { "cert": "/srv/insight/data/cong.crt", "key": "/srv/insight/data/cong.key" },
+    "choPhepHttp": false
+  },
+  "jira": { "url": "https://jira-sds.softdreams.vn:8080", "boQuaKiemChungChi": false, "caFile": "/srv/insight/data/ca-noi-bo.pem" },
+  "quyen": { "kieu": "quyen-jira", "duAn": "EPB", "quyen": "CREATE_ISSUES", "danhSach": [] },
+  "repo": ["easyposbackend", "easypos-frontend", "easypos-gateway-cloud", "easypos-product-material", "easypos-report", "easyposmodel", "easyposbase", "invoice-service", "warehouse-service"],
+  "banChup": { "thuMuc": "/srv/insight/snap" },
+  "worker": {
+    "lenh": ["node", "tools/code-insight/worker-claude.js"],
+    "hetGioMs": 240000,
+    "byteToiDa": 1048576,
+    "song": 2,
+    "hangDoiToiDa": 10,
+    "claude": {
+      "lenh": "claude",
+      "bare": true,
+      "model": "",
+      "maxTurns": 15,
+      "maxBudgetUsd": 0.5,
+      "docker": { "bat": true, "anh": "insight-worker:latest", "mang": "insight-egress", "bonNho": "4g", "cpu": "2" }
+    }
+  },
+  "gioiHan": { "yeuCauMoiPhut": 20, "yeuCauMoiNgay": 150, "workerMoiNgay": 40, "byteMoiNgay": 600000, "dongThoiMoiNguoi": 2 },
+  "loc": { "chuoiToiDa": 400, "tongToiDa": 8000, "soCheToiDa": 8, "tiLeCheToiDa": 0.4 },
+  "cache": { "thuMuc": "/srv/insight/data/cache", "hanGio": 168 },
+  "chiMuc": { "thuMuc": "/srv/insight/data/chi-muc", "n": 8 },
+  "nhatKy": "/srv/insight/logs/nhat-ky.log",
+  "trangThaiHanMuc": "/srv/insight/data/han-muc.json"
+}

@@ -172,8 +172,14 @@ function thuMucTrinhDuyet() {
   if (coPw !== undefined) { thuTok('Jira', path.join('jira', 'jira-tao.js'), '--toi'); thuTok('Confluence', path.join('confluence', 'confluence.js'), 'toi'); }
 
   /* 8c. Bitbucket (tài khoản Git đã đăng nhập hoặc token riêng) */
-  tieuDe('8c. Bitbucket — Claude đọc mã nguồn qua bb.js (tùy chọn nhưng nên có)');
-  {
+  let congBat = false; try { congBat = !!require('./code-insight-cai').cauHinh().bat; } catch (e) { /* không đọc được cấu hình cổng = coi như tắt */ }
+  tieuDe(congBat ? '8c. Cổng đọc mã Code-Insight — Claude đọc mã nguồn bằng token Jira (tùy chọn nhưng nên có)' : '8c. Bitbucket — Claude đọc mã nguồn qua bb.js (tùy chọn nhưng nên có)');
+  if (congBat) {
+    const r = chay('node', ['"' + path.join(KIT, 'tools', 'tester', 'code-insight-cai.js') + '"', 'kiem']);
+    const noi = ((r.stdout || '') + (r.stderr || '')).trim().split(/\r?\n/);
+    if (r.status === 0) ok(noi[0].replace(/^\[OK\]\s*/, 'Cổng Code-Insight: '));
+    else canhBao('Cổng Code-Insight: ' + (noi[0] || '').replace(/^\[!\]\s*/, ''), (noi[1] || '').replace(/^\s*→\s*/, '') + ' (không có cũng test được, chỉ Claude không đọc được mã nguồn)');
+  } else {
     const r = chay('node', ['"' + path.join(KIT, 'tools', 'tester', 'bb.js') + '"', 'repo']);
     const out = ((r.stdout || '') + '\n' + (r.stderr || '')).split(/\r?\n/).filter(l => l.trim());
     if (r.status === 0 && out.length) ok('Bitbucket: đọc được ' + out.length + ' repo trong project EPOS');
