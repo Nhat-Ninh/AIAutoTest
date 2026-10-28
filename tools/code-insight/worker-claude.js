@@ -14,7 +14,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const MAC_DINH = {
-  lenh: 'claude', bare: true, model: '', maxTurns: 15, maxBudgetUsd: 0.5,
+  lenh: 'claude', bare: true, model: '', maxTurns: 25, maxBudgetUsd: 1.5,
   allowedTools: 'Read,Grep,Glob',
   disallowedTools: 'Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task',
   chan: ['Read(//**/.env*)', 'Read(//**/application.yml)', 'Read(//**/application.yaml)', 'Read(//**/application.properties)', 'Read(//**/*.crt)', 'Read(//**/*.tfstate)', 'Read(//**/application-*.yml)', 'Read(//**/application-*.yaml)', 'Read(//**/application-*.properties)', 'Read(//**/bootstrap*.yml)', 'Read(//**/*.pem)', 'Read(//**/*.key)', 'Read(//**/*.p12)', 'Read(//**/*.jks)', 'Read(//**/.git/**)', 'Read(//**/id_rsa*)'],
@@ -31,6 +31,14 @@ const HE_THONG = [
   '5. Không đọc tệp cấu hình (application-*.yml, .env, *.properties), khoá, chứng chỉ.',
   '6. Không chắc thì để mảng rỗng và nói rõ trong ghi_chu / cau_hoi_mo; không bịa.',
 ].join('\n');
+
+/** Quy tắc 7: ngân sách lượt. Claude hết lượt giữa chừng thì KHÔNG trả gì (mất công + tiền): ép nó định vị bằng Grep/Glob, đọc có chọn lọc và chốt kết quả khi còn vài lượt. */
+function heSoLuot(maxTurns) {
+  const n = Number(maxTurns) || 0, doc = Math.max(3, n - 5);
+  const chiMuc = ' Mỗi repo có sẵn .insight/api.txt (mọi endpoint REST: tệp:dòng:chú thích) và .insight/bang.txt (entity / bảng): ĐỌC / Grep chúng TRƯỚC để định vị tệp cần đọc, đỡ mất lượt tìm kiếm. Đọc SONG SONG nhiều tệp trong cùng một lượt khi có thể.';
+  if (!(n > 0)) return '7. Không có giới hạn cứng số lượt, nhưng thời gian trả lời có hạn: cần ĐỦ SÂU và ĐÚNG hơn là nhanh, nhưng đừng đọc lan man (chức năng lớn thì lần theo luồng chính trước, ghi nhánh phụ vào cau_hoi_mo).' + chiMuc;
+  return '7. Bạn chỉ có TỐI ĐA ' + n + ' lượt gọi công cụ. Định vị trước bằng Grep / Glob (tìm theo tên API, lớp, từ khoá nghiệp vụ), chỉ Read các tệp trọng tâm và đọc theo đoạn; đừng đọc lan man. Sau khoảng ' + doc + ' lượt PHẢI dừng đọc và trả JSON với những gì đã biết, ghi phần chưa chắc vào cau_hoi_mo / ghi_chu. Trả JSON dở dang còn hơn hết lượt mà không trả gì.' + chiMuc;
+}
 
 /** Mẫu JSON (khung) sinh từ lược đồ của tool, để worker biết đúng hình dạng cần trả. */
 function mau(nut) {
@@ -50,9 +58,10 @@ function dungLenh(yc) {
   c.docker = Object.assign({}, MAC_DINH.docker, (yc.cauHinhWorker && yc.cauHinhWorker.docker) || {});
   const cl = [];
   if (c.bare) cl.push('--bare');
-  cl.push('-p', LOI_NHAC, '--output-format', 'json', '--max-turns', String(c.maxTurns), '--permission-mode', 'dontAsk',
-    '--allowedTools', c.allowedTools, '--disallowedTools', c.disallowedTools, '--append-system-prompt', HE_THONG,
+  cl.push('-p', LOI_NHAC, '--output-format', 'json', '--permission-mode', 'dontAsk',
+    '--allowedTools', c.allowedTools, '--disallowedTools', c.disallowedTools, '--append-system-prompt', HE_THONG + '\n' + heSoLuot(c.maxTurns),
     '--settings', JSON.stringify({ permissions: { deny: c.chan, blockReadsOutsideWorkingDirectories: true } }));
+  if (c.maxTurns > 0) cl.push('--max-turns', String(c.maxTurns));      // 0 = không giới hạn số lượt (chỉ còn hạn giờ của cổng)
   if (c.model) cl.push('--model', c.model);
   if (c.maxBudgetUsd > 0) cl.push('--max-budget-usd', String(c.maxBudgetUsd));
   const du = {
@@ -123,4 +132,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { tomTatLoi, dungLenh, mau, traJson, HE_THONG, MAC_DINH };
+module.exports = { heSoLuot, tomTatLoi, dungLenh, mau, traJson, HE_THONG, MAC_DINH };

@@ -7,7 +7,7 @@
   "banChup": { "thuMuc": "C:/insight-pilot/snap" },
   "worker": {
     "lenh": ["node", "tools/code-insight/worker-claude.js"],
-    "hetGioMs": 240000,
+    "hetGioMs": 420000,
     "byteToiDa": 1048576,
     "song": 1,
     "hangDoiToiDa": 5,
@@ -15,8 +15,8 @@
       "lenh": "claude",
       "bare": true,
       "model": "",
-      "maxTurns": 15,
-      "maxBudgetUsd": 0.5,
+      "maxTurns": 25,
+      "maxBudgetUsd": 1.5,
       "docker": { "bat": true, "anh": "insight-worker:latest", "mang": "", "bonNho": "4g", "cpu": "2" }
     }
   },

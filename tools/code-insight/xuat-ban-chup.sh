@@ -77,6 +77,10 @@ find "$TAM" -type l -delete
 mkdir -p "$TAM/.insight"
 git log -n 3000 --date=short --format='%h|%ad|%an|%s' "$SHA" > "$TAM/.insight/commits.txt" 2>/dev/null || : > "$TAM/.insight/commits.txt"
 git log -n 1500 --name-only --format='@@ %h %s' "$SHA" > "$TAM/.insight/changes.txt" 2>/dev/null || : > "$TAM/.insight/changes.txt"
+# Chỉ mục tra nhanh KHÔNG dùng LLM (grep, vài giây): danh sách endpoint REST và entity / bảng, dạng "tệp:dòng:nội dung chú thích".
+# Worker đọc chúng đầu tiên để định vị đúng tệp ngay, bớt hàng chục lượt Grep ⇒ nhanh và rẻ hơn hẳn với chức năng lớn.
+( cd "$TAM" && { grep -rnE '@(Get|Post|Put|Patch|Delete|Request)Mapping' --include='*.java' . || true; } | sed 's#^\./##' | cut -c1-260 ) > "$TAM/.insight/api.txt" || : > "$TAM/.insight/api.txt"
+( cd "$TAM" && { grep -rnE '@(Table|Entity|Document)\b' --include='*.java' . || true; } | sed 's#^\./##' | cut -c1-260 ) > "$TAM/.insight/bang.txt" || : > "$TAM/.insight/bang.txt"
 printf '{"repo":"%s","commit":"%s","nhanh":"%s","xuatLuc":"%s"}\n' "$REPO" "$SHA" "$NHANH" "$(date -u +%FT%TZ)" > "$TAM/.insight/ban-chup.json"
 
 # 4. Bản chụp rỗng = lỗi (không để cổng đọc một thư mục trống rồi "phân tích" bịa)

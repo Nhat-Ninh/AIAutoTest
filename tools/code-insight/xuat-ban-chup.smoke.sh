@@ -19,6 +19,8 @@ echo khoa > "id_rsa"; echo x > chung-chi.pem; echo A=1 > .env; echo jar > bin/ap
 mkdir -p build/gen dist; echo "class G {}" > build/gen/G.java; echo "var d" > dist/d.js
 echo x > KEY.PEM; echo y > Application-Prod.yml; echo z > application.yml; echo w > docker-compose.yml; echo v > settings.xml; echo u > Jenkinsfile
 head -c 3000000 /dev/zero | tr '\0' 'a' > src/to-lon.txt
+printf '@RestController\npublic class Ctl {\n  @PostMapping("/invoice/cancel")\n  void huy() { }\n}\n' > src/Ctl.java
+printf '@Entity\n@Table(name = "invoice")\nclass Inv { }\n' > src/Inv.java
 git add -A; git commit -qm "EPB-12 them A"; echo '// sua' >> src/A.java; git commit -qam "EPB-13 sua A"
 SHA="$(git rev-parse HEAD)"
 
@@ -34,6 +36,8 @@ ca "so tên KHÔNG phân biệt hoa thường: KEY.PEM, Application-Prod.yml b�
 ca "application.yml gốc, docker-compose, settings.xml, Jenkinsfile bị XOÁ" "$([ ! -e "$B/application.yml" ] && [ ! -e "$B/docker-compose.yml" ] && [ ! -e "$B/settings.xml" ] && [ ! -e "$B/Jenkinsfile" ]; echo $?)"
 ca "thư mục build/ dist/ bị XOÁ khỏi bản chụp (khớp phạm vi chỉ mục)" "$([ ! -e "$B/build" ] && [ ! -e "$B/dist" ]; echo $?)"
 ca "tệp > 2 MB bị XOÁ" "$(khong "$B/src/to-lon.txt")"
+ca ".insight/api.txt liệt kê endpoint (tệp:dòng) bằng grep, không cần LLM" "$(grep -q 'src/Ctl.java:3:.*PostMapping.*invoice/cancel' "$B/.insight/api.txt"; echo $?)"
+ca ".insight/bang.txt liệt kê entity / bảng" "$(grep -q 'src/Inv.java:2:.*Table.*invoice' "$B/.insight/bang.txt"; echo $?)"
 ca "KHÔNG có .git trong bản chụp" "$(khong "$B/.git")"
 ca "toàn bản chụp không còn chuỗi mật khẩu mẫu" "$(! grep -rq 'Abc12345' "$B"; echo $?)"
 ca ".insight/commits.txt có EPB-12 và EPB-13" "$(grep -q 'EPB-12' "$B/.insight/commits.txt" && grep -q 'EPB-13' "$B/.insight/commits.txt"; echo $?)"

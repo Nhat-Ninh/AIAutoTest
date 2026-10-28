@@ -12,7 +12,7 @@ const https = require('https');
 const readline = require('readline');
 const C = require('./code-insight-cai');
 
-const HET_GIO_MS = 300000;   // một lượt phân tích có thể mất vài phút (worker chạy Claude)
+const HET_GIO_MS = 960000;   // một lượt phân tích có thể mất vài phút (worker chạy Claude)
 
 const loiRpc = (id, code, msg) => ({ jsonrpc: '2.0', id: id === undefined ? null : id, error: { code, message: msg } });
 const ra = (o) => process.stdout.write(JSON.stringify(o) + '\n');
