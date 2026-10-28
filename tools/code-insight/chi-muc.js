@@ -56,6 +56,17 @@ class ChiMuc {
     while (lo <= hi) { const mid = (lo + hi) >>> 1; const x = a[mid]; if (x === v) return true; if (x < v) lo = mid + 1; else hi = mid - 1; }
     return false;
   }
+  /** Số cửa sổ trùng mã nguồn mà BẮC QUA ranh giới giữa hai mục liền nhau (dấu hiệu mã bị chia nhỏ qua nhiều mục). Cửa sổ nằm trọn trong một mục do kiểm từng mục lo; cộng chúng lại làm báo cáo dài bị từ chối oan. */
+  soTrungLienChuoi(ds) {
+    const th = []; const bien = new Set();
+    for (const s of ds) { const t = bamCacToken(s); if (!t.length) continue; if (th.length) bien.add(th.length); for (const x of t) th.push(x); }
+    let dem = 0;
+    for (let i = 0; i + this.n <= th.length; i++) {
+      let cat = false; for (let b = i + 1; b < i + this.n; b++) if (bien.has(b)) { cat = true; break; }
+      if (cat && this.co(bamCuaSo(th, i, this.n))) dem++;
+    }
+    return dem;
+  }
   /** Số cửa sổ của đoạn văn trùng với mã nguồn (0 = sạch). Đoạn ngắn hơn N token không có cửa sổ nên luôn 0. */
   soTrung(text) {
     const th = bamCacToken(text);

@@ -99,7 +99,7 @@ function traJson(text) {
 function tomTatLoi(stdout) {
   try {
     const j = JSON.parse(String(stdout || '').trim().split(String.fromCharCode(10)).filter(Boolean).pop());
-    const p = []; if (j.subtype) p.push('subtype=' + j.subtype); if (j.terminal_reason) p.push('lý do=' + j.terminal_reason); if (Array.isArray(j.errors) && j.errors.length) p.push('errors=' + j.errors.join('; ').slice(0, 200)); if (j.total_cost_usd !== undefined) p.push('đã tốn=' + j.total_cost_usd + ' USD'); if (j.num_turns !== undefined) p.push('lượt=' + j.num_turns);
+    const p = []; if (j.subtype) p.push('subtype=' + j.subtype); if (j.terminal_reason) p.push('lý do=' + j.terminal_reason); if (Array.isArray(j.errors) && j.errors.length) p.push('errors=' + j.errors.join('; ').slice(0, 200)); if (j.is_error === true) p.push('is_error=true'); if (j.is_error === true && typeof j.result === 'string') p.push('thông điệp="' + j.result.replace(/\s+/g, ' ').slice(0, 160) + '"'); if (j.total_cost_usd !== undefined) p.push('đã tốn=' + j.total_cost_usd + ' USD'); if (j.num_turns !== undefined) p.push('lượt=' + j.num_turns);
     return p.length ? ' [' + p.join(' · ') + ']' : '';
   } catch (e) { return ''; }
 }
@@ -114,7 +114,7 @@ function chay(yc) {
     c.on('close', (code) => {
       if (code !== 0) return rej(new Error(d.lenh + ' thoát mã ' + code + ': ' + err.slice(0, 1000) + tomTatLoi(out)));
       let j; try { j = JSON.parse(out); } catch (e) { return rej(new Error('đầu ra của claude không phải JSON')); }
-      if (j.is_error) return rej(new Error('claude báo lỗi (' + (j.subtype || '?') + ')'));
+      if (j.is_error) return rej(new Error('claude báo lỗi (' + (j.subtype || '?') + ')' + tomTatLoi(out)));
       try { res({ ket: j.structured_output || traJson(j.result), meta: { chiPhiUsd: j.total_cost_usd, soLuot: j.num_turns } }); } catch (e) { rej(e); }
     });
     c.stdin.on('error', () => { /* thoát sớm */ });

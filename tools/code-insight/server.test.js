@@ -142,7 +142,7 @@ const loi = (r) => !!(r.j && r.j.result && r.j.result.isError);
 
   /* 4. tools/call — đường chính, cache */
   r = await tool(pc, A, 'giai_thich_luong', { cau_hoi: 'Huỷ hoá đơn xử lý thế nào?', repo: 'easyposbackend' });
-  ca('giai_thich_luong: trả JSON đã lọc + dòng "Bản mã" repo@commit', !loi(r) && /# Bản mã đã đọc \(đang chạy trên DEV\): easyposbackend@a1b2c3d4e5f6/.test(text(r)) && /"tom_tat"/.test(text(r)), text(r));
+  ca('giai_thich_luong: trả JSON đã lọc + dòng "Bản mã" repo@commit', !loi(r) && /Bản mã đã đọc \(đang chạy trên DEV\): easyposbackend@a1b2c3d4e5f6/.test(text(r)) && /"tom_tat"/.test(text(r)), text(r));
   ca('worker được gọi đúng 1 lần', dem_(chinh.log) === 1, dem_(chinh.log));
   r = await tool(pc, B, 'giai_thich_luong', { cau_hoi: 'Huỷ hoá đơn xử lý thế nào?', repo: 'easyposbackend' });
   ca('cache: tester KHÁC hỏi lại cùng câu ⇒ không gọi worker, vẫn trả kết quả', !loi(r) && /"tom_tat"/.test(text(r)) && dem_(chinh.log) === 1, dem_(chinh.log));
@@ -319,6 +319,7 @@ const loi = (r) => !!(r.j && r.j.result && r.j.result.isError);
     ca('F5: docker chỉ gắn ĐÚNG thư mục bản chụp đã ghim của từng repo (không gắn cả gốc, không gắn repo khác / bản cũ / "current")', !dk.args.some(x => /:\/snap:ro$/.test(x)) && dk.args.filter(x => /:ro$/.test(x)).length === 1 && /a1:\/snap\/easyposbackend:ro$/.test(dk.args.find(x => /:ro$/.test(x))) && dk.stdin.includes('"duong_dan": "easyposbackend"'));
     ca('F5: mặc định của worker là Docker; chế độ thẳng chỉ khi tắt rõ ràng, và dùng đường dẫn có commit (không "current")', W.dungLenh(Object.assign({}, yc, { cauHinhWorker: {} })).lenh === 'docker' && d.stdin.includes('easyposbackend/a1') && !d.stdin.includes('current'));
     ca('worker: lời nhắc hệ thống nêu NGÂN SÁCH LƯỢT (đúng số maxTurns) để Claude chốt kết quả trước khi hết lượt', /TỐI ĐA 25 lượt/.test(d.args[d.args.indexOf('--append-system-prompt') + 1]) && /PHẢI dừng đọc và trả JSON/.test(d.args[d.args.indexOf('--append-system-prompt') + 1]));
+    ca('worker: Claude báo is_error (chưa đăng nhập / sai khoá) với subtype=success, 0 USD ⇒ nhật ký ghi thông điệp thật để biết nguyên nhân', (() => { const s = W.tomTatLoi('{"type":"result","subtype":"success","is_error":true,"result":"Invalid API key · Please run /login","total_cost_usd":0,"num_turns":1}'); return /is_error=true/.test(s) && /Invalid API key/.test(s); })());
     ca('worker: lỗi hết lượt / ngân sách được bóc ra từ JSON ở stdout (stderr rỗng) cho quản trị', /subtype=error_max_turns/.test(W.tomTatLoi('{"subtype":"error_max_turns","terminal_reason":"max_turns","num_turns":16,"total_cost_usd":0.6}')) && W.tomTatLoi('không phải json') === '');
     ca('F7: luật chặn đọc có cả application.yml gốc; ngân sách mặc định > 0', st.permissions.deny.some(x => /application\.yml/.test(x)) && W.MAC_DINH.maxBudgetUsd > 0);
     ca('worker docker: chỉ truyền TÊN biến API key, không có giá trị trên dòng lệnh', dk.args.includes('ANTHROPIC_API_KEY') && !dk.args.some(x => /^sk-/.test(x)) && dk.args[dk.args.indexOf('--network') + 1] === 'insight-egress');
@@ -327,6 +328,6 @@ const loi = (r) => !!(r.j && r.j.result && r.j.result.isError);
   }
 
   console.log('\n' + dung + '/' + (dung + sai) + ' ca đúng');
-  try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) { /* dọn tạm */ }
+  if (process.env.GIU_TMP) console.log("TMP=" + tmp); else try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) { /* dọn tạm */ }
   process.exit(sai ? 1 : 0);
 })().catch((e) => { console.error('LỖI bộ thử: ' + (e && e.stack || e)); process.exit(2); });

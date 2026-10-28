@@ -33,6 +33,7 @@ fs.writeFileSync(path.join(snap, 'application.yml'), 'spring.datasource.url jdbc
 fs.writeFileSync(path.join(snap, 'Makefile'), 'deploy target release candidate build number alpha beta gamma delta epsilon zeta\n');
 // Bình luận tiếng Việt trong mã (rất phổ biến ở EasyPOS): bản tách token ASCII-only làm văn xuôi tiếng Việt trùng oan với chúng.
 fs.writeFileSync(path.join(snap, 'src', 'ViDu.java'), ['/**', ' * Tính tiền cho từng dòng hàng, cộng thuế và trừ chiết khấu, sau đó ghi sổ quỹ của ca bán hàng hôm nay.', ' * Người dùng nhập số lượng, hệ thống tính thuế và chiết khấu rồi lưu vào cơ sở dữ liệu của cửa hàng.', ' */', 'class ViDu { }'].join(String.fromCharCode(10)));
+fs.writeFileSync(path.join(snap, 'src', 'Ctl2.java'), '@PostMapping("/api/client/page/product/quick-create")\n@GetMapping("/api/client/page/product/suggestions")\n');
 fs.writeFileSync(path.join(snap, 'Doc.md'), 'the quick brown fox jumps over the lazy dog near the river bank today\n');
 fs.writeFileSync(path.join(snap, 'nhi-phan.bin'), Buffer.from([0, 1, 2, 3, 0, 255]));
 const chiMuc = CM.dung(path.join(tmp, 'easyposbackend'));
@@ -213,6 +214,26 @@ for (const [ten, s] of [
   ca('chép nguyên bình luận tiếng Việt trong mã VẪN bị phát hiện (≥ 3 cửa sổ liên tiếp)', chiMuc.soTrung('Tính tiền cho từng dòng hàng, cộng thuế và trừ chiết khấu, sau đó ghi sổ quỹ của ca bán hàng hôm nay.') >= 3);
   const x = sach(); x.tom_tat = vanXuoi; const q = L.loc(x, LD, OPT);
   ca('tóm tắt tiếng Việt thật qua bộ lọc không bị che', q.ok && q.daChe.length === 0, JSON.stringify(q.daChe));
+}
+
+/* ---- lần lab iCheck 28/10: (1) báo cáo dài bị từ chối oan "mã chia nhỏ"; (2) đường dẫn API bị che vì nằm nguyên văn trong mã ---- */
+{
+  const LDm = L.Obj({ ds: L.Arr(L.Str(300), 40) });
+  const nhieuTrich = Array.from({ length: 12 }, (_, i) => 'Bước ' + i + ': the quick brown fox jumps over rồi kiểm tra điều kiện số ' + i + ' của chức năng');
+  let r2 = L.loc({ ds: nhieuTrich }, LDm, OPT);
+  ca('báo cáo dài: nhiều mục mỗi mục trích ngắn (1 cửa sổ n-gram) KHÔNG bị từ chối "mã chia nhỏ" (chỉ đếm cửa sổ BẮC QUA ranh giới mục)', r2.ok, JSON.stringify(r2.ok ? '' : r2.lyDo));
+  ca('soTrungLienChuoi đếm đúng: mã chia qua mục (7) > 0, mục độc lập = 0', chiMuc.soTrungLienChuoi(['the quick brown fox', 'jumps over the lazy', 'dog near the river']) === 7 && chiMuc.soTrungLienChuoi(['hệ thống bán hàng', 'tính thuế và chiết khấu']) === 0);
+  const LDp = L.Obj({ thuong: L.Str(200), duong: L.Str(200, { ten: true }), tham: L.Arr(L.Str(80, { ten: true }), 5) });
+  const API = '/api/client/page/product/quick-create';
+  r2 = L.loc({ thuong: API, duong: API, tham: ['items[].barcode (String, bắt buộc)', 'warehouseId'] }, LDp, OPT);
+  ca('đường dẫn API: trường thường bị n-gram che (nằm nguyên văn trong mã), trường "tên" (ten:true) được GIỮ', r2.ok && r2.ket.thuong === L.NHAN.che && r2.ket.duong === API, JSON.stringify(r2.ok ? r2.ket : r2.lyDo));
+  ca('trường "tên" chấp nhận tên tham số kèm chú thích ngắn trong ngoặc', r2.ok && r2.ket.tham[0] === 'items[].barcode (String, bắt buộc)' && r2.ket.tham[1] === 'warehouseId');
+  r2 = L.loc({ thuong: 'x', duong: 'if (a) { b(); }', tham: [] }, LDp, OPT);
+  ca('trường "tên" nhưng nội dung là code ⇒ vẫn bị che (chỉ bỏ qua lớp n-gram, các lớp khác vẫn áp)', r2.ok && r2.ket.duong === L.NHAN.che);
+  r2 = L.loc({ thuong: 'x', duong: 'Đây là cả một câu văn dài có dấu cách không phải tên', tham: [] }, LDp, OPT);
+  ca('trường "tên" có dấu cách (không phải một từ liền) ⇒ coi như chuỗi thường (kiểm đủ các lớp, không thành kênh giấu chữ)', r2.ok && r2.ket.duong.startsWith('Đây là'));
+  r2 = L.loc({ thuong: 'x', duong: 'password=Abc12345xyz', tham: [] }, LDp, OPT);
+  ca('trường "tên" chứa bí mật ⇒ vẫn bị che', r2.ok && r2.ket.duong === L.NHAN.che);
 }
 
 /* ---- đầu vào tool ---- */

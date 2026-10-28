@@ -259,7 +259,7 @@ function taoMayChu(cfg) {
   const loiTool = (msg) => ({ isError: true, content: [{ type: 'text', text: msg }] });
   const vanBan = (t) => ({ content: [{ type: 'text', text: t }] });
   // Không đưa số đoạn bị che / lý do lọc cho tester (tránh thành "máy dò" xem câu nào trùng mã): chỉ ghi nhật ký quản trị.
-  const dinhDang = (v) => '# Bản mã đã đọc (đang chạy trên DEV): ' + v.banMa + '\n' + JSON.stringify(v.ket, null, 2);
+  const dinhDang = (v) => 'Bản mã đã đọc (đang chạy trên DEV): ' + v.banMa + '\n' + JSON.stringify(v.ket, null, 2);
 
   const chiMucTenTep = new Map();
   /** { 'InvoiceService.java': ['src/…/InvoiceService.java', …] } của một bản chụp (bỏ .git / node_modules; tối đa 300 000 tệp); nhớ theo thư mục. */
@@ -339,7 +339,7 @@ function taoMayChu(cfg) {
       const cham = hanMuc.worker(nguoi);
       if (cham) return { kq: loiTool(cham), log: Object.assign(log, { ma: 'het-han-muc-worker' }) };
       let chiMuc;
-      try { const ds = []; for (const b of ban) ds.push(await layChiMuc(b)); chiMuc = { soTrung: (x) => ds.reduce((a, d) => a + d.soTrung(x), 0) }; }
+      try { const ds = []; for (const b of ban) ds.push(await layChiMuc(b)); chiMuc = { soTrung: (x) => ds.reduce((a, d) => a + d.soTrung(x), 0), soTrungLienChuoi: (x) => ds.reduce((a, d) => a + d.soTrungLienChuoi(x), 0) }; }
       catch (e) { return { kq: loiTool('Cổng tạm thời không kiểm được bản chụp (chỉ mục) — thử lại sau / báo người phụ trách.'), log: Object.assign(log, { ma: 'loi-chi-muc', chiTiet: String(e.message).slice(0, 160) }) }; }
 
       const yeuCau = (phanHoi) => ({ tool: ten, nhiemVu: t.nhiemVu(n), args: n, repos: ban.map(b => ({ ten: b.repo, duongDan: b.duongDan, sha: b.sha, thuMuc: b.thuMuc })), thuMucGoc: path.resolve(cfg.banChup.thuMuc), luocDo: t.luocDo, phanHoi: phanHoi || '', cauHinhWorker: cfg.worker.claude });
@@ -445,8 +445,14 @@ function taoMayChu(cfg) {
 }
 
 /* ---------------- --kiem và chạy ---------------- */
+/** Cảnh báo nếu tiến trình cổng không có đăng nhập Claude (worker sẽ chết ngay, 0 USD, vài giây): chỉ biến môi trường của CHÍNH phiên khởi động cổng mới được chuyển vào worker. */
+function canhBaoDangNhap() {
+  return (process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY) ? '' : 'CẢNH BÁO: tiến trình này KHÔNG có CLAUDE_CODE_OAUTH_TOKEN (hay ANTHROPIC_API_KEY). Worker sẽ báo "Worker phân tích gặp sự cố" ngay sau vài giây. Dừng, rồi chạy: read -rs CLAUDE_CODE_OAUTH_TOKEN; export CLAUDE_CODE_OAUTH_TOKEN  và khởi động lại TRONG CÙNG phiên.';
+}
+
 async function kiemNoi(cfg) {
   const ra = [];
+  if (canhBaoDangNhap()) ra.push(canhBaoDangNhap());
   try { const r = await jiraGet(cfg, '/rest/api/2/serverInfo', 'x'); ra.push('Jira ' + cfg.jira.url + ': HTTP ' + r.s + ' (200 / 401 đều là nối được)'); } catch (e) { ra.push('Jira ' + cfg.jira.url + ': KHÔNG nối được (' + String(e.message).slice(0, 80) + ')'); }
   const t = taoMayChu(Object.assign({}, cfg, { nhatKy: '', trangThaiHanMuc: '' }));
   for (const r of cfg.repo) { const b = t.banChupHienTai(r); ra.push('Bản chụp ' + r + ': ' + (b ? 'OK @' + b.sha.slice(0, 12) : 'CHƯA CÓ ' + path.join(cfg.banChup.thuMuc, r, 'current'))); }
@@ -505,6 +511,7 @@ async function main() {
   if (a.includes('--kiem')) { console.log('Cấu hình hợp lệ. Thử nối:'); for (const l of await kiemNoi(cfg)) console.log('  ' + l); console.log('Repo phục vụ: ' + cfg.repo.join(', ') + ' · worker: ' + cfg.worker.lenh.join(' ') + ' · quyền: ' + cfg.quyen.kieu); return; }
   if (a.includes('--thu-claude')) { thuClaude(cfg); return; }
   if (a.includes('--thu-worker')) { await thuWorker(cfg); return; }
+  const cb = canhBaoDangNhap(); if (cb) console.error('\n' + cb + '\n');
   const { handler, hanMuc } = taoMayChu(cfg);
   const tls = cfg.lang.tls.cert && cfg.lang.tls.key;
   const server = tls ? https.createServer({ cert: fs.readFileSync(cfg.lang.tls.cert), key: fs.readFileSync(cfg.lang.tls.key) }, handler) : http.createServer(handler);

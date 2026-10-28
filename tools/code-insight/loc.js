@@ -73,13 +73,13 @@ function giongMaHoa(s) {
 }
 
 /** Làm sạch MỘT chuỗi theo các lớp. Trả { text, lop } — lop = null nếu giữ nguyên (lop chỉ để ghi nhật ký quản trị, KHÔNG trả cho tester). */
-function lamSachChuoi(s, max, ctx) {
+function lamSachChuoi(s, max, ctx, boQuaNgram) {
   let t = chuan(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim();
   let lop = null;
   if (t.length > Math.max(max * 3, 1200)) lop = 'qua-dai';
   else if (KY_TU_LA_RE.test(t)) lop = 'ky-tu-la';
   else if (giongMa(t)) lop = 'ma';
-  else if (ctx.chiMuc && ctx.chiMuc.soTrung(t) >= ctx.cfg.nguongNgram) lop = 'ngram';
+  else if (!boQuaNgram && ctx.chiMuc && ctx.chiMuc.soTrung(t) >= ctx.cfg.nguongNgram) lop = 'ngram';
   else if (biMat(t)) lop = 'bimat';
   else if (giongMaHoa(t)) lop = 'ma-hoa';
   if (lop) return { text: NHAN.che, lop };
@@ -110,8 +110,10 @@ function lamSachNut(v, nut, duong, ctx) {
         if (!hopLe) { che(ctx, duong, 'tham-chieu', v); return NHAN.thamchieu; }
         return phan.join(', ');
       }
-      const r = lamSachChuoi(v, Math.min(nut.max || ctx.cfg.chuoiToiDa, ctx.cfg.chuoiToiDa), ctx);
-      if (r.lop) che(ctx, duong, r.lop, v); else ctx.vanBan.push(r.text);
+      // Trường "tên" (nut.ten): đường dẫn API, tên bảng / cột / tham số — là THỨ TESTER CẦN và nằm nguyên văn trong mã nên không so n-gram; chỉ nhận MỘT từ liền (không dấu cách) kèm tối đa một chú thích ngắn trong ngoặc; các lớp khác (mã, bí mật, độ dài…) vẫn áp.
+      const laTen = nut.ten === true && /^[^\s]{1,160}( \([^()]{0,60}\))?$/.test(chuan(v).trim());
+      const r = lamSachChuoi(v, Math.min(nut.max || ctx.cfg.chuoiToiDa, ctx.cfg.chuoiToiDa), ctx, laTen);
+      if (r.lop) che(ctx, duong, r.lop, v); else if (!laTen) ctx.vanBan.push(r.text);
       return r.text;
     }
     case 'enum':
@@ -163,7 +165,7 @@ function loc(raw, luocDo, opts) {
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) ket = lamSachNut(raw, luocDo, '', ctx);
     else throw new LoiLoc('schema', 'kết quả của worker không phải đối tượng JSON');
     // Chặn chia nhỏ mã thành nhiều mảnh ngắn (mỗi mảnh < N token nên không mảnh nào tự trùng): kiểm cả CHUỖI GHÉP theo thứ tự của toàn báo cáo.
-    if (ctx.chiMuc && ctx.vanBan.length > 1 && ctx.chiMuc.soTrung(ctx.vanBan.join(' ')) >= ctx.cfg.nguongNgram) throw new LoiLoc('ngram-lien-chuoi', 'báo cáo có đoạn mã bị chia nhỏ qua nhiều mục');
+    if (ctx.chiMuc && ctx.vanBan.length > 1 && ctx.chiMuc.soTrungLienChuoi(ctx.vanBan) >= ctx.cfg.nguongNgram) throw new LoiLoc('ngram-lien-chuoi', 'báo cáo có đoạn mã bị chia nhỏ qua nhiều mục');
     if (!epTong(ket, cfg.tongToiDa)) throw new LoiLoc('qua-dai', 'báo cáo vượt giới hạn tổng và không cắt được');
   } catch (e) {
     if (e instanceof LoiLoc) return { ok: false, ma: e.ma, lyDo: e.message };
