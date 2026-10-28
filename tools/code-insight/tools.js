@@ -55,7 +55,7 @@ const DS = {
   },
   giai_thich_luong: {
     moTa: 'Giải thích BẰNG LỜI một luồng nghiệp vụ trong mã nguồn (kèm tham chiếu tệp:dòng). Không trả code.',
-    inputSchema: { type: 'object', properties: { cau_hoi: { type: 'string', description: 'Câu hỏi bằng lời, tối đa 500 ký tự' }, repo: { type: 'string', description: 'Tên repo (tuỳ chọn)' } }, required: ['cau_hoi'], additionalProperties: false },
+    inputSchema: { type: 'object', properties: { cau_hoi: { type: 'string', description: 'Câu hỏi bằng lời, tối đa 500 ký tự' }, repo: { type: 'string', description: 'Tên repo — NÊN chỉ định (vd easyposbackend): không chỉ định thì phân tích chậm và tốn kém hơn nhiều' } }, required: ['cau_hoi'], additionalProperties: false },
     kiemDauVao(a, cfg) { return { cau_hoi: chuanHoaChuoi(a && a.cau_hoi, 'cau_hoi', 5, 500), repo: chuanHoaRepo(a && a.repo, cfg) }; },
     luocDo: Obj({
       tom_tat: Str(400),
@@ -63,7 +63,7 @@ const DS = {
       quy_tac: Arr(Str(300), 15),
       cau_hoi_mo: Arr(Str(200), 10),
     }),
-    nhiemVu: (n) => 'Trả lời câu hỏi sau bằng cách đọc mã nguồn' + (n.repo ? ' của repo ' + n.repo : '') + ' và mô tả luồng xử lý theo từng bước.',
+    nhiemVu: (n) => 'Trả lời câu hỏi sau bằng cách đọc mã nguồn' + (n.repo ? ' của repo ' + n.repo : '') + ' và mô tả luồng xử lý theo từng bước.' + (n.repo ? '' : ' Không chỉ định repo: trước hết chọn TỐI ĐA 3 repo liên quan nhất theo tên thư mục (liệt kê thư mục gốc), chỉ đọc các repo đó, KHÔNG quét tất cả các repo.'),
     khoaCache: (n) => n.repo + '|' + n.cau_hoi.toLowerCase(),
   },
   liet_ke_api: {
@@ -71,7 +71,7 @@ const DS = {
     inputSchema: { type: 'object', properties: { chuc_nang: { type: 'string', description: 'Tên chức năng, vd "huỷ hoá đơn"' }, repo: { type: 'string' } }, required: ['chuc_nang'], additionalProperties: false },
     kiemDauVao(a, cfg) { return { chuc_nang: chuanHoaChuoi(a && a.chuc_nang, 'chuc_nang', 3, 200), repo: chuanHoaRepo(a && a.repo, cfg) }; },
     luocDo: Obj({ api: Arr(Obj({ method: METHOD, duong_dan: Str(200), tham_so: Arr(Str(80), 20), ma_loi: Arr(Str(80), 10), quyen: TUY(Str(80)) }), 40) }),
-    nhiemVu: (n) => 'Liệt kê các API REST liên quan chức năng "' + n.chuc_nang + '"' + (n.repo ? ' trong repo ' + n.repo : '') + ': method, đường dẫn, tên tham số, mã lỗi, quyền yêu cầu.',
+    nhiemVu: (n) => 'Liệt kê các API REST liên quan chức năng "' + n.chuc_nang + '"' + (n.repo ? ' trong repo ' + n.repo : '') + ': method, đường dẫn, tên tham số, mã lỗi, quyền yêu cầu.' + (n.repo ? '' : ' Không chỉ định repo: trước hết chọn TỐI ĐA 3 repo liên quan nhất theo tên thư mục (liệt kê thư mục gốc), chỉ đọc các repo đó, KHÔNG quét tất cả các repo.'),
     khoaCache: (n) => n.repo + '|' + n.chuc_nang.toLowerCase(),
   },
   bang_db_lien_quan: {
@@ -79,7 +79,7 @@ const DS = {
     inputSchema: { type: 'object', properties: { chuc_nang: { type: 'string' }, repo: { type: 'string' } }, required: ['chuc_nang'], additionalProperties: false },
     kiemDauVao(a, cfg) { return { chuc_nang: chuanHoaChuoi(a && a.chuc_nang, 'chuc_nang', 3, 200), repo: chuanHoaRepo(a && a.repo, cfg) }; },
     luocDo: Obj({ bang: Arr(Obj({ bang: Str(80), cot: Arr(Str(60), 30), ghi_chu: TUY(Str(200)) }), 30) }),
-    nhiemVu: (n) => 'Liệt kê các bảng và cột CSDL mà chức năng "' + n.chuc_nang + '"' + (n.repo ? ' (repo ' + n.repo + ')' : '') + ' đọc / ghi.',
+    nhiemVu: (n) => 'Liệt kê các bảng và cột CSDL mà chức năng "' + n.chuc_nang + '"' + (n.repo ? ' (repo ' + n.repo + ')' : '') + ' đọc / ghi.' + (n.repo ? '' : ' Không chỉ định repo: trước hết chọn TỐI ĐA 3 repo liên quan nhất theo tên thư mục (liệt kê thư mục gốc), chỉ đọc các repo đó, KHÔNG quét tất cả các repo.'),
     khoaCache: (n) => n.repo + '|' + n.chuc_nang.toLowerCase(),
   },
 };

@@ -18,7 +18,7 @@ const MAC_DINH = {
   allowedTools: 'Read,Grep,Glob',
   disallowedTools: 'Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task',
   chan: ['Read(//**/.env*)', 'Read(//**/application.yml)', 'Read(//**/application.yaml)', 'Read(//**/application.properties)', 'Read(//**/*.crt)', 'Read(//**/*.tfstate)', 'Read(//**/application-*.yml)', 'Read(//**/application-*.yaml)', 'Read(//**/application-*.properties)', 'Read(//**/bootstrap*.yml)', 'Read(//**/*.pem)', 'Read(//**/*.key)', 'Read(//**/*.p12)', 'Read(//**/*.jks)', 'Read(//**/.git/**)', 'Read(//**/id_rsa*)'],
-  docker: { bat: true, anh: 'insight-worker:latest', mang: '', bonNho: '4g', cpu: '2', bienTruyen: ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', 'HTTPS_PROXY', 'NO_PROXY'] },
+  docker: { bat: true, selinux: false, anh: 'insight-worker:latest', mang: '', bonNho: '4g', cpu: '2', bienTruyen: ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', 'HTTPS_PROXY', 'NO_PROXY'] },
 };
 
 const LOI_NHAC = 'Thực hiện nhiệm vụ mô tả trong khối <du_lieu> nhận qua stdin và trả về ĐÚNG MỘT đối tượng JSON theo "mau_json". Không viết gì ngoài JSON.';
@@ -71,7 +71,7 @@ function dungLenh(yc) {
     ...(typeof process.getuid === 'function' ? ['--user', process.getuid() + ':' + process.getgid()] : []),
     '--tmpfs', '/tmp:rw,size=256m', '-e', 'HOME=/tmp/home', '-w', '/snap'];
   // Mỗi repo một điểm gắn :ro tới ĐÚNG thư mục bản chụp đã ghim (không gắn cả gốc: worker không thấy repo khác / bản cũ).
-  for (const r of yc.repos || []) dk.push('-v', (r.thuMuc || path.join(yc.thuMucGoc, r.ten, r.sha)) + ':/snap/' + r.ten + ':ro');
+  for (const r of yc.repos || []) dk.push('-v', (r.thuMuc || path.join(yc.thuMucGoc, r.ten, r.sha)) + ':/snap/' + r.ten + (d.selinux ? ':ro,z' : ':ro'));
   if (d.mang) dk.push('--network', d.mang);
   for (const b of d.bienTruyen) dk.push('-e', b);            // chỉ TÊN biến: giá trị lấy từ môi trường tiến trình, không lộ trên dòng lệnh
   dk.push(d.anh, c.lenh, ...cl);
@@ -86,6 +86,15 @@ function traJson(text) {
   return JSON.parse(t.slice(a, b + 1));
 }
 
+/** Claude Code khi lỗi (hết ngân sách, hết lượt…) thường thoát mã 1 với stderr RỖNG và nguyên nhân nằm trong JSON ở stdout: bóc subtype / errors / terminal_reason để quản trị thấy lý do. */
+function tomTatLoi(stdout) {
+  try {
+    const j = JSON.parse(String(stdout || '').trim().split(String.fromCharCode(10)).filter(Boolean).pop());
+    const p = []; if (j.subtype) p.push('subtype=' + j.subtype); if (j.terminal_reason) p.push('lý do=' + j.terminal_reason); if (Array.isArray(j.errors) && j.errors.length) p.push('errors=' + j.errors.join('; ').slice(0, 200)); if (j.total_cost_usd !== undefined) p.push('đã tốn=' + j.total_cost_usd + ' USD'); if (j.num_turns !== undefined) p.push('lượt=' + j.num_turns);
+    return p.length ? ' [' + p.join(' · ') + ']' : '';
+  } catch (e) { return ''; }
+}
+
 function chay(yc) {
   const d = dungLenh(yc);
   return new Promise((res, rej) => {
@@ -94,7 +103,7 @@ function chay(yc) {
     c.stdout.on('data', x => { out += x; }); c.stderr.on('data', x => { if (err.length < 1500) err += x; });
     c.on('error', e => rej(new Error('không chạy được ' + d.lenh + ': ' + e.message)));
     c.on('close', (code) => {
-      if (code !== 0) return rej(new Error(d.lenh + ' thoát mã ' + code + ': ' + err.slice(0, 1000)));
+      if (code !== 0) return rej(new Error(d.lenh + ' thoát mã ' + code + ': ' + err.slice(0, 1000) + tomTatLoi(out)));
       let j; try { j = JSON.parse(out); } catch (e) { return rej(new Error('đầu ra của claude không phải JSON')); }
       if (j.is_error) return rej(new Error('claude báo lỗi (' + (j.subtype || '?') + ')'));
       try { res({ ket: j.structured_output || traJson(j.result), meta: { chiPhiUsd: j.total_cost_usd, soLuot: j.num_turns } }); } catch (e) { rej(e); }
@@ -114,4 +123,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { dungLenh, mau, traJson, HE_THONG, MAC_DINH };
+module.exports = { tomTatLoi, dungLenh, mau, traJson, HE_THONG, MAC_DINH };
