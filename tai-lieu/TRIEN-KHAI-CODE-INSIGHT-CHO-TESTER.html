@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triển khai Code-Insight cho tester</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f5f5f5;--paper-2:#ececec;--ink:#2d3142;--muted:#4f5d75;--soft:#7a8399;--rule:rgba(45,49,66,.12);--accent:#eb6c36;--accent-tint:rgba(235,108,54,.08);--link:#2e5aa8;--ok:#2f7d4f;--ok-tint:rgba(47,125,79,.09);--warn:#b7791f;--warn-tint:rgba(183,121,31,.10);--bad:#b3392f;--bad-tint:rgba(179,57,47,.08);
+--sans:'Geist',system-ui,'Segoe UI',sans-serif;--serif:'Instrument Serif','Times New Roman',serif;--mono:'Geist Mono',ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15171f;--paper-2:#1d2029;--ink:#e8eaf0;--muted:#aab2c5;--soft:#7f889d;--rule:rgba(232,234,240,.14);--accent-tint:rgba(235,108,54,.14);--link:#7fa6e8;--ok-tint:rgba(47,125,79,.2);--warn-tint:rgba(183,121,31,.2);--bad-tint:rgba(179,57,47,.2)}}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);padding:3rem 1rem;line-height:1.6;font-size:.95rem}
+.container{max-width:1060px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
+h1{font-family:var(--serif);font-size:clamp(2rem,3vw+1rem,2.9rem);font-weight:400;letter-spacing:-.02em;line-height:1.1;margin-bottom:.75rem}
+h2{font-family:var(--serif);font-size:1.7rem;font-weight:400;line-height:1.2;margin:3.2rem 0 .5rem;padding-top:1.5rem;border-top:1px solid var(--rule)}
+h2 .num{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;color:var(--accent);display:block;margin-bottom:.35rem}
+h3{font-size:.98rem;font-weight:600;margin:1.6rem 0 .5rem}
+p{color:var(--muted);max-width:78ch;margin-bottom:.85rem}
+p strong,li strong,td strong{color:var(--ink);font-weight:600}
+.subtitle{font-size:1.05rem;color:var(--muted);max-width:64ch}
+.meta{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;margin-top:1.1rem;font-family:var(--mono);font-size:.72rem;color:var(--soft)}
+.toc{margin:1.8rem 0 0;padding:1.1rem 1.4rem;background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;columns:2;column-gap:2rem}
+.toc a{display:block;color:var(--muted);text-decoration:none;font-size:.85rem;padding:.18rem 0;break-inside:avoid}
+.toc a:hover{color:var(--ink)}.toc a span{font-family:var(--mono);font-size:.7rem;color:var(--soft);margin-right:.6rem}
+.diagram{margin:1.4rem 0 .4rem;overflow-x:auto}.diagram svg{width:100%;min-width:820px;display:block}
+.caption{font-family:var(--mono);font-size:.7rem;color:var(--soft);margin-bottom:1.2rem}
+table{width:100%;border-collapse:collapse;margin:1rem 0 1.4rem;background:var(--paper-2);border:1px solid var(--rule);font-size:.82rem}
+th{font-family:var(--mono);font-size:.64rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--rule)}
+td{padding:.55rem .8rem;border-bottom:1px solid var(--rule);color:var(--muted);vertical-align:top}tr:last-child td{border-bottom:none}
+.tw{overflow-x:auto}.tw table{min-width:640px}
+code{font-family:var(--mono);font-size:.78em;background:rgba(122,131,153,.16);padding:.08em .35em;border-radius:3px;color:var(--ink)}
+pre{font-family:var(--mono);font-size:.76rem;line-height:1.55;background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:.9rem 1.1rem;overflow-x:auto;margin:.6rem 0 1.1rem;color:var(--ink)}
+ul.pl,ol.st{color:var(--muted);max-width:78ch;margin:0 0 1rem 1.2rem}ul.pl li,ol.st li{margin-bottom:.35rem}
+.tag{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.1rem .45rem;border:1px solid var(--rule);border-radius:2px;color:var(--muted);white-space:nowrap}
+.tag.ok{color:var(--ok);border-color:var(--ok)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}.tag.hi{color:var(--accent);border-color:var(--accent)}
+.call{border-left:3px solid var(--accent);background:var(--accent-tint);padding:.7rem 1rem;margin:1.1rem 0;max-width:80ch;border-radius:0 4px 4px 0}.call p{margin:0;color:var(--ink)}
+.call.ok{border-color:var(--ok);background:var(--ok-tint)}.call.warn{border-color:var(--warn);background:var(--warn-tint)}.call.bad{border-color:var(--bad);background:var(--bad-tint)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.2rem 0}
+.card{background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:1.1rem}.card h3{margin:0 0 .5rem;font-size:.9rem}.card p{font-size:.84rem;margin:0}
+.stage{border:1px solid var(--rule);border-radius:6px;background:var(--paper-2);padding:1rem 1.2rem;margin:1rem 0}.stage>h3{margin-top:0}
+.stage .who{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.3rem}
+.footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--rule);font-family:var(--mono);font-size:.72rem;color:var(--soft);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+@media (max-width:760px){body{padding:2rem 1rem}.cards{grid-template-columns:1fr}.toc{columns:1}}
+@media print{body{padding:0;background:#fff}.diagram{overflow:visible}.diagram svg{min-width:0}h2{break-after:avoid}table,pre,.card,.stage{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <p class="eyebrow">Tài liệu 1 / 2 · Hướng dẫn triển khai · 28/10/2026</p>
+  <h1>Triển khai Code-Insight cho tester</h1>
+  <p class="subtitle">Từng bước đưa cổng đọc mã từ "chạy được trên máy tôi" tới "tester dùng được trong ngày", gồm cả phần việc của bạn, phần nhờ DevOps, phần tester tự bấm, tiêu chí nghiệm thu và cách quay lui.</p>
+  <div class="meta"><span>Dự án: EasyPOS tester kit</span><span>Nhánh: newchapter → main</span><span>Cổng: 10.100.110.233:8443</span><span>Trạng thái: sẵn sàng pilot</span></div>
+  <nav class="toc" aria-label="Mục lục">
+    <a href="#tom-tat"><span>01</span>Tóm tắt: tester sẽ thấy gì</a>
+    <a href="#dieu-kien"><span>02</span>Điều kiện trước khi mở</a>
+    <a href="#luong"><span>03</span>Luồng triển khai</a>
+    <a href="#buoc"><span>04</span>Các bước cho người phụ trách</a>
+    <a href="#tester"><span>05</span>Phần tester tự làm</a>
+    <a href="#nut"><span>06</span>Đọc kết quả của nút bấm</a>
+    <a href="#nghiem-thu"><span>07</span>Nghiệm thu pilot</a>
+    <a href="#quay-lui"><span>08</span>Quay lui</a>
+    <a href="#ngay-dau"><span>09</span>Theo dõi trong ngày đầu</a>
+    <a href="#con-lai"><span>10</span>Việc còn treo và rủi ro</a>
+    <a href="#mau"><span>11</span>Mẫu tin nhắn</a>
+  </nav>
+</header>
+
+<h2 id="tom-tat"><span class="num">01</span>Tóm tắt: tester sẽ thấy gì</h2>
+<p>Luồng làm việc của tester <strong>không đổi</strong>: họ vẫn chat với Claude trên máy mình và vẫn đi đủ 7 bước kiểm thử. Khác biệt duy nhất nằm ở Bước 1 (phân tích): thay vì đọc Bitbucket bằng quyền cá nhân, Claude gọi các tool <code>code-insight</code> và nhận về <strong>bản tóm tắt</strong> (luồng, API, bảng CSDL, rủi ro, gợi ý test) kèm "bản mã" <code>repo@commit</code>, không có mã nguyên văn.</p>
+<div class="cards">
+  <div class="card"><h3>Tester được gì</h3><p>Không cần quyền Bitbucket, không cần token Bitbucket. Chỉ cần token Jira (đã có để tạo ticket). Hỏi lại câu cũ thì có kết quả ngay từ cache.</p></div>
+  <div class="card"><h3>Tester phải làm gì</h3><p>Cập nhật kit, bấm đúp <code>CAI-CODE-INSIGHT.cmd</code>, mở phiên Claude mới và cho phép máy chủ MCP <code>code-insight</code> một lần.</p></div>
+  <div class="card"><h3>Bạn phải làm gì</h3><p>Giữ cổng chạy trên server, mở cổng mạng, cấp quyền tester, đưa nhánh vào <code>main</code>, theo dõi nhật ký trong ngày đầu.</p></div>
+</div>
+
+<h2 id="dieu-kien"><span class="num">02</span>Điều kiện trước khi mở</h2>
+<p>Đánh dấu đủ các mục <span class="tag bad">chặn</span> rồi mới đưa cho tester. Mục <span class="tag warn">nên có</span> chấp nhận được trong pilot ngắn nhưng phải xử lý trước khi chạy lâu dài.</p>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Điều kiện</th><th>Cách kiểm</th><th>Mức</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Cổng đang chạy ở <code>10.100.110.233:8443</code></td><td><code>ss -ltnp | grep 8443</code> trên server; từ máy bạn <code>curl.exe -sk https://10.100.110.233:8443/health</code> ra <code>ok</code></td><td><span class="tag bad">chặn</span></td></tr>
+<tr><td>2</td><td>Một lượt hỏi thật đã ra <code>"ma":"ok"</code> trong nhật ký (worker chạy Docker trả kết quả)</td><td><code>tail -2 /opt/dev/jenkins/jenkins/insight/data/nhat-ky.log</code></td><td><span class="tag bad">chặn</span></td></tr>
+<tr><td>3</td><td>Cổng 8443 mở từ dải VPN / mạng của <strong>máy tester</strong> (không chỉ máy bạn)</td><td>Từ máy tester: <code>Test-NetConnection 10.100.110.233 -Port 8443</code> ra <code>True</code>; nhờ DevOps nếu <code>False</code></td><td><span class="tag bad">chặn</span></td></tr>
+<tr><td>4</td><td>Username Jira của tester nằm trong <code>quyen.danhSach</code> (hoặc đổi sang <code>quyen.kieu: "quyen-jira"</code>)</td><td><code>grep -A3 '"quyen"' cau-hinh.json</code></td><td><span class="tag bad">chặn</span></td></tr>
+<tr><td>5</td><td>Nhánh <code>newchapter</code> đã vào <code>main</code> (tester chỉ nhận kit từ <code>main</code>), gồm <code>config/code-insight-ca.pem</code> và <code>config/code-insight.json</code> với <code>bat:true</code></td><td><code>git log origin/main</code> có commit; <code>config/code-insight-ca.pem</code> có trong kho</td><td><span class="tag bad">chặn</span></td></tr>
+<tr><td>6</td><td>Bản chụp mã mới có <code>.insight/api.txt</code> và <code>bang.txt</code>, cổng dùng bản <code>worker-claude.js</code> mới</td><td><code>ls snap/easyposbackend/current/.insight/</code></td><td><span class="tag warn">nên có</span></td></tr>
+<tr><td>7</td><td>Bản chụp tự cập nhật (cron <code>xuat-tat-ca.sh</code>), không chỉ lần chạy tay</td><td><code>crontab -l</code></td><td><span class="tag warn">nên có</span></td></tr>
+<tr><td>8</td><td>Cổng chạy bằng <code>systemd</code> (sống qua khởi động lại), có gitleaks trước khi bỏ <code>CI_GITLEAKS=tat</code></td><td>Nhờ DevOps; <code>command -v gitleaks</code></td><td><span class="tag warn">nên có</span></td></tr>
+<tr><td>9</td><td>Nguồn tính phí cho worker đã chốt (token cá nhân chỉ để pilot; chạy thật cần API key / gói doanh nghiệp)</td><td>Sếp duyệt</td><td><span class="tag warn">nên có</span></td></tr>
+</tbody></table></div>
+
+<h2 id="luong"><span class="num">03</span>Luồng triển khai</h2>
+<p>Sáu chặng, mỗi chặng có một cổng kiểm. Không sang chặng sau khi chặng trước chưa qua.</p>
+<div class="diagram"><svg viewBox="0 0 1000 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Luồng triển khai sáu chặng">
+<defs><marker id="a1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f5d75"/></marker></defs>
+<g font-family="Geist,Segoe UI,sans-serif">
+<g><rect x="10" y="50" width="150" height="110" rx="8" fill="#fff" stroke="#2d3142"/><text x="85" y="76" text-anchor="middle" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace" letter-spacing="1">CHẶNG 1</text><text x="85" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3142">Chuẩn bị server</text><text x="85" y="118" text-anchor="middle" font-size="10" fill="#4f5d75">cổng chạy, worker ok</text><text x="85" y="134" text-anchor="middle" font-size="10" fill="#4f5d75">bản chụp mới + chỉ mục</text></g>
+<g><rect x="175" y="50" width="150" height="110" rx="8" fill="#fff" stroke="#2d3142"/><text x="250" y="76" text-anchor="middle" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace" letter-spacing="1">CHẶNG 2</text><text x="250" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3142">Thử trên máy bạn</text><text x="250" y="118" text-anchor="middle" font-size="10" fill="#4f5d75">nút bấm 0 lỗi</text><text x="250" y="134" text-anchor="middle" font-size="10" fill="#4f5d75">3 câu hỏi kiểm</text></g>
+<g><rect x="340" y="50" width="150" height="110" rx="8" fill="#fff" stroke="#2d3142"/><text x="415" y="76" text-anchor="middle" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace" letter-spacing="1">CHẶNG 3</text><text x="415" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3142">Đưa vào main</text><text x="415" y="118" text-anchor="middle" font-size="10" fill="#4f5d75">bạn tự commit / merge</text><text x="415" y="134" text-anchor="middle" font-size="10" fill="#4f5d75">mở cổng 8443 (DevOps)</text></g>
+<g><rect x="505" y="50" width="150" height="110" rx="8" fill="rgba(235,108,54,.08)" stroke="#eb6c36"/><text x="580" y="76" text-anchor="middle" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace" letter-spacing="1">CHẶNG 4 · CỔNG KIỂM</text><text x="580" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3142">Pilot 1–2 tester</text><text x="580" y="118" text-anchor="middle" font-size="10" fill="#4f5d75">thêm tên vào danh sách</text><text x="580" y="134" text-anchor="middle" font-size="10" fill="#4f5d75">nghiệm thu 1 ngày</text></g>
+<g><rect x="670" y="50" width="150" height="110" rx="8" fill="#fff" stroke="#2d3142"/><text x="745" y="76" text-anchor="middle" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace" letter-spacing="1">CHẶNG 5</text><text x="745" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3142">Mở cả nhóm</text><text x="745" y="118" text-anchor="middle" font-size="10" fill="#4f5d75">quyen-jira hoặc danh sách</text><text x="745" y="134" text-anchor="middle" font-size="10" fill="#4f5d75">gửi hướng dẫn tester</text></g>
+<g><rect x="835" y="50" width="150" height="110" rx="8" fill="#fff" stroke="#2d3142"/><text x="910" y="76" text-anchor="middle" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace" letter-spacing="1">CHẶNG 6</text><text x="910" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#2d3142">Thu hồi Bitbucket</text><text x="910" y="118" text-anchor="middle" font-size="10" fill="#4f5d75">gỡ quyền đọc đã cấp</text><text x="910" y="134" text-anchor="middle" font-size="10" fill="#4f5d75">sau khi mọi người ổn</text></g>
+<path d="M160 105 H175" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#a1)"/><path d="M325 105 H340" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#a1)"/><path d="M490 105 H505" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#a1)"/><path d="M655 105 H670" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#a1)"/><path d="M820 105 H835" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#a1)"/>
+<path d="M580 160 V205 H85 V165" fill="none" stroke="#b3392f" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#a1)"/><text x="330" y="222" font-size="10" fill="#b3392f" font-family="Geist Mono,monospace" text-anchor="middle">pilot lỗi ⇒ bat:false rồi push (quay lui) và sửa ở chặng 1</text>
+</g></svg></div>
+<p class="caption">Hình 1 · Sáu chặng triển khai, đường đứt là quay lui</p>
+
+<h2 id="buoc"><span class="num">04</span>Các bước cho người phụ trách</h2>
+
+<div class="stage"><div class="who">Chặng 1 · Bạn, trên server (MobaXterm)</div><h3>1. Xuất lại bản chụp để có chỉ mục tra nhanh</h3>
+<p>Script xuất bản chụp nằm ở <code>/opt/dev/jenkins/jenkins/insight/</code>, tách với mã cổng ở <code>…/insight/kit/</code>. Chép bản mới của <code>xuat-ban-chup.sh</code> vào <strong>cả hai nơi cần</strong> (thư mục <code>insight/</code> nơi script xuất chạy), rồi:</p>
+<pre>sed -i 's/\r$//' /opt/dev/jenkins/jenkins/insight/xuat-ban-chup.sh
+CI_GITLEAKS=tat CI_XUAT_LAI=1 bash /opt/dev/jenkins/jenkins/insight/xuat-tat-ca.sh \
+  /opt/dev/jenkins/jenkins/workspace/dev-pos /opt/dev/jenkins/jenkins/insight/anh-xa.txt /opt/dev/jenkins/jenkins/insight/snap
+ls /opt/dev/jenkins/jenkins/insight/snap/easyposbackend/current/.insight/    # phải có api.txt và bang.txt</pre>
+<h3>2. Cấu hình ngân sách và đặt quyền cho tester</h3>
+<pre>cd /opt/dev/jenkins/jenkins/insight
+sed -i 's/"maxBudgetUsd": [0-9.]*/"maxBudgetUsd": 0/; s/"maxTurns": [0-9]*/"maxTurns": 0/; s/"hetGioMs": [0-9]*/"hetGioMs": 900000/' cau-hinh.json
+vi cau-hinh.json   # mục "quyen": thêm Username Jira của 1–2 tester vào "danhSach": ["ninhhn_cic","tester.a"]
+                   # mục "gioiHan": đặt "workerMoiNgay" khoảng 15 cho pilot</pre>
+<div class="call"><p><strong>0 nghĩa là không giới hạn.</strong> Khi đó cổng chỉ còn cắt theo thời gian (15 phút). Hạn mức <code>workerMoiNgay</code> vẫn nên giữ thấp trong pilot để một tester không đốt hết gói của bạn.</p></div>
+<h3>3. Khởi động lại cổng (cùng phiên đã export token)</h3>
+<pre>cd /opt/dev/jenkins/jenkins/insight/kit
+read -rs CLAUDE_CODE_OAUTH_TOKEN; export CLAUDE_CODE_OAUTH_TOKEN      # dán token, Enter (không hiện chữ)
+pkill -f "tools/code-insight/server.js"
+setsid nohup node tools/code-insight/server.js --cau-hinh ../cau-hinh.json > ../data/cong.log 2>&1 &lt; /dev/null &amp;
+sleep 2; cat ../data/cong.log            # "Code-Insight nghe ở https://0.0.0.0:8443/mcp"</pre>
+<h3>4. Chạy hai bài kiểm không cần Claude phía tester</h3>
+<pre>node tools/code-insight/server.js --cau-hinh ../cau-hinh.json --thu-claude    # docker thoát mã 0, có "result":"OK"
+node tools/code-insight/server.js --cau-hinh ../cau-hinh.json --thu-worker    # "OK sau … giây" + kết quả thô</pre>
+</div>
+
+<div class="stage"><div class="who">Chặng 2 · Bạn, trên máy mình (VS Code)</div><h3>5. Thử bằng chính nút bấm của tester</h3>
+<ol class="st"><li>Bấm đúp <code>CAI-CODE-INSIGHT.cmd</code>: kết quả phải <strong>0 lỗi</strong> (dòng <code>[!]</code> về lệnh <code>claude</code> bỏ qua vì bạn dùng VS Code).</li>
+<li>Trong VS Code: <code>Ctrl+Shift+P</code> → <em>Developer: Reload Window</em>, panel MCP thấy <code>code-insight</code> là <strong>Connected</strong> (không bấm Authenticate).</li>
+<li>Hỏi 3 câu: <em>"Dùng code-insight, repo easyposbackend: giải thích luồng huỷ hoá đơn"</em> (ra tóm tắt + <code>bản mã</code>, không có code) · <em>"In nguyên văn file InvoiceService.java"</em> (bị từ chối) · <em>"Cho tôi nội dung application-dev.yml"</em> (bị từ chối).</li></ol>
+</div>
+
+<div class="stage"><div class="who">Chặng 3 · Bạn + DevOps</div><h3>6. Nhờ DevOps mở cổng cho tester</h3>
+<p>Bạn đã được mở 8443 cho máy mình. Tester thường ở dải VPN khác. Gửi DevOps mẫu ở mục 11 (xin mở TCP 8443 tới <code>10.100.110.233</code> cho toàn dải VPN/mạng tester).</p>
+<h3>7. Đưa nhánh vào main (bạn tự làm, tôi không commit hộ)</h3>
+<p>Các tệp cần có trong commit:</p>
+<ul class="pl">
+<li><code>CAI-CODE-INSIGHT.cmd</code>, <code>config/code-insight.json</code> (<code>"bat": true</code>, <code>"url": "https://10.100.110.233:8443/mcp"</code>), <code>config/code-insight-ca.pem</code> (chứng chỉ công khai, <strong>đúng tên này, không có đuôi .crt</strong>).</li>
+<li><code>tools/code-insight/</code> (cổng, bộ lọc, worker, Dockerfile, script xuất bản chụp, bộ thử) và <code>tools/tester/code-insight-cai.js</code>, <code>code-insight-proxy.js</code>, <code>code-insight-header.js</code> cùng các bộ thử.</li>
+<li>Thay đổi hook (<code>hooks/guard-easypos.js</code>, <code>hooks/session-rules.js</code>), <code>rules/QUY-TRINH.md</code>, <code>.gitignore</code> (đã chặn <code>.mcp.json</code>), <code>README.md</code>, hai tài liệu hướng dẫn và hai tài liệu HTML này.</li></ul>
+<div class="call warn"><p>Không đưa <code>.mcp.json</code> hay <code>.mcp.json.bak-*</code> lên git (đã nằm trong <code>.gitignore</code>, nhưng nhớ <code>git status</code> trước khi commit). Khi nhánh vào <code>main</code>, máy tester tự cập nhật ở lần mở phiên Claude kế tiếp hoặc khi bấm <code>CAP-NHAT.cmd</code>.</p></div>
+</div>
+
+<div class="stage"><div class="who">Chặng 4–6</div><h3>8. Pilot, mở cả nhóm, thu hồi Bitbucket</h3>
+<ul class="pl"><li><strong>Pilot (1 ngày, 1–2 tester):</strong> chỉ tên họ trong <code>quyen.danhSach</code>. Chạy nghiệm thu ở mục 07.</li>
+<li><strong>Mở cả nhóm:</strong> thêm tên vào danh sách hoặc đổi <code>quyen.kieu</code> thành <code>"quyen-jira"</code> (ai có quyền tạo ticket dự án EPB đều dùng được); khởi động lại cổng; gửi tester mẫu ở mục 11.</li>
+<li><strong>Thu hồi quyền Bitbucket</strong> đã cấp cho từng tester và xoá token cá nhân của họ <strong>chỉ khi</strong> mọi người đã chạy ổn vài ngày. Đây mới là lúc mục tiêu "tester không đọc được Bitbucket" đạt thật; trước đó cổng chỉ là một đường thay thế.</li></ul></div>
+
+<h2 id="tester"><span class="num">05</span>Phần tester tự làm</h2>
+<p>Gửi nguyên mục này cho tester. Máy tester cần: VPN bật, Node 18+, token Jira trong <code>jira.properties</code>, Claude Code (VS Code hoặc dòng lệnh).</p>
+<div class="diagram"><svg viewBox="0 0 1000 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bảy chặng kiểm của nút bấm">
+<defs><marker id="a2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f5d75"/></marker></defs>
+<g font-family="Geist,Segoe UI,sans-serif" font-size="11" text-anchor="middle">
+<rect x="6" y="40" width="120" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="66" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">1</text><text x="66" y="80" font-weight="600" fill="#2d3142">Kit đã mới?</text><text x="66" y="97" font-size="9" fill="#4f5d75">tự cập nhật</text>
+<rect x="146" y="40" width="120" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="206" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">2</text><text x="206" y="80" font-weight="600" fill="#2d3142">Node + Claude</text><text x="206" y="97" font-size="9" fill="#4f5d75">có trong máy</text>
+<rect x="286" y="40" width="120" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="346" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">3</text><text x="346" y="80" font-weight="600" fill="#2d3142">Cấu hình cổng</text><text x="346" y="97" font-size="9" fill="#4f5d75">bat + chứng chỉ</text>
+<rect x="426" y="40" width="120" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="486" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">4</text><text x="486" y="80" font-weight="600" fill="#2d3142">Nối vào Claude</text><text x="486" y="97" font-size="9" fill="#4f5d75">ghi .mcp.json</text>
+<rect x="566" y="40" width="120" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="626" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">5</text><text x="626" y="80" font-weight="600" fill="#2d3142">Token Jira</text><text x="626" y="97" font-size="9" fill="#4f5d75">đã điền chưa</text>
+<rect x="706" y="40" width="120" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="766" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">6</text><text x="766" y="80" font-weight="600" fill="#2d3142">Mạng tới cổng</text><text x="766" y="97" font-size="9" fill="#4f5d75">TCP 8443</text>
+<rect x="846" y="40" width="148" height="70" rx="6" fill="rgba(235,108,54,.08)" stroke="#eb6c36"/><text x="920" y="62" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">7</text><text x="920" y="80" font-weight="600" fill="#2d3142">Gọi cổng thật</text><text x="920" y="97" font-size="9" fill="#4f5d75">tools/list bằng token</text>
+<path d="M126 75 H146 M266 75 H286 M406 75 H426 M546 75 H566 M686 75 H706 M826 75 H846" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#a2)"/>
+<text x="500" y="160" fill="#4f5d75" font-size="12">Mỗi chặng in <tspan fill="#2f7d4f" font-weight="600">[OK]</tspan> · <tspan fill="#b7791f" font-weight="600">[!]</tspan> cảnh báo · <tspan fill="#b3392f" font-weight="600">[X]</tspan> lỗi kèm việc cần làm; cuối cùng ghi nhật ký cai-code-insight.log</text>
+<text x="500" y="190" fill="#4f5d75" font-size="12">0 lỗi ⇒ mở phiên Claude MỚI, cho phép máy chủ MCP "code-insight", gõ /mcp thấy "connected"</text>
+</g></svg></div>
+<p class="caption">Hình 2 · Bảy chặng kiểm của <code>CAI-CODE-INSIGHT.cmd</code></p>
+<ol class="st">
+<li>Bật VPN. Mở kit như mọi lần hoặc bấm <code>CAP-NHAT.cmd</code> để nhận bản mới (1–2 phút).</li>
+<li><strong>Bấm đúp <code>CAI-CODE-INSIGHT.cmd</code></strong> trong thư mục kit và đọc kết quả. Làm theo dòng <code>→</code> dưới mỗi <code>[X]</code>, rồi bấm lại cho tới khi 0 lỗi.</li>
+<li>Mở <strong>phiên Claude mới</strong> trong thư mục kit. Khi hộp thoại hỏi cho phép máy chủ MCP <code>code-insight</code>, chọn cho phép.</li>
+<li>Giao một chức năng như thường lệ. Nên <strong>nêu tên repo</strong> trong yêu cầu (ví dụ "repo easyposbackend") và hỏi theo từng phần thay vì "giải thích toàn bộ": nhanh hơn, đúng hơn, cache tận dụng được.</li>
+<li>Có <code>[X]</code> không tự xử lý được: gửi người phụ trách tệp <code>%USERPROFILE%\.easypos-tester\cai-code-insight.log</code> (không chứa token).</li></ol>
+
+<h2 id="nut"><span class="num">06</span>Đọc kết quả của nút bấm</h2>
+<div class="tw"><table>
+<thead><tr><th>Dòng báo</th><th>Nghĩa</th><th>Ai xử lý</th><th>Cách xử lý</th></tr></thead>
+<tbody>
+<tr><td><span class="tag ok">OK</span> Cổng đang TẮT</td><td><code>bat:false</code>: chưa bật cho máy này</td><td>—</td><td>Không cần làm gì, kit đọc mã như trước</td></tr>
+<tr><td><span class="tag bad">X</span> Thiếu / sai tên chứng chỉ</td><td>Chưa có <code>config/code-insight-ca.pem</code> trong kit</td><td>Bạn</td><td>Đặt đúng tên, push, tester bấm <code>CAP-NHAT.cmd</code></td></tr>
+<tr><td><span class="tag bad">X</span> Chưa có token Jira</td><td>Chưa điền <code>jira.properties</code></td><td>Tester</td><td>Tạo PAT Jira, ghi vào tệp (HUONG-DAN-TESTER Phần 6.4)</td></tr>
+<tr><td><span class="tag bad">X</span> Mạng thông nhưng dịch vụ KHÔNG chạy</td><td>TCP bị từ chối: cổng đã dừng</td><td>Bạn</td><td>Khởi động lại cổng (Bước 3 chặng 1)</td></tr>
+<tr><td><span class="tag bad">X</span> Không tới được …:8443 (hết giờ)</td><td>Chưa bật VPN hoặc tường lửa chặn</td><td>Tester / DevOps</td><td>Bật VPN; vẫn lỗi thì DevOps mở cổng cho dải của tester</td></tr>
+<tr><td><span class="tag bad">X</span> 403 chưa được phép</td><td>Tên Jira chưa có trong <code>quyen.danhSach</code></td><td>Bạn</td><td>Thêm tên, khởi động lại cổng</td></tr>
+<tr><td><span class="tag bad">X</span> 401 token bị từ chối</td><td>PAT Jira hết hạn / sai</td><td>Tester</td><td>Tạo lại PAT, ghi vào <code>jira.properties</code></td></tr>
+<tr><td><span class="tag warn">!</span> Không thấy lệnh claude</td><td>Claude Code không nằm trong PATH của cmd</td><td>—</td><td>Bỏ qua nếu dùng Claude trong VS Code</td></tr>
+<tr><td><span class="tag warn">!</span> Kit chưa mới (máy phụ trách)</td><td>Kit khác <code>main</code> do bạn đang làm trên nhánh</td><td>—</td><td>Bình thường trên máy bạn</td></tr>
+</tbody></table></div>
+
+<h2 id="nghiem-thu"><span class="num">07</span>Nghiệm thu pilot</h2>
+<p>Pilot đạt khi <strong>cả</strong> các mục sau đúng với ít nhất 2 người dùng thật trong một ngày làm việc:</p>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Tiêu chí</th><th>Cách đo</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Nút bấm 0 lỗi trên máy tester (không phải máy bạn)</td><td>Ảnh chụp kết quả + <code>cai-code-insight.log</code></td></tr>
+<tr><td>2</td><td>Một chức năng thật đi hết Bước 1 bằng tool <code>code-insight</code>, báo cáo có dòng "bản mã"</td><td>Báo cáo trong <code>bao-cao/</code> của tester</td></tr>
+<tr><td>3</td><td>Câu đòi in nguyên văn / cấu hình bị từ chối, không lộ code</td><td>Tester thử + nhật ký <code>dau-vao</code> hoặc <code>bi-loc-tu-choi</code></td></tr>
+<tr><td>4</td><td>Tỉ lệ lượt <code>"ma":"ok"</code> ≥ 80%, không có <code>loi-worker-…</code> lặp lại</td><td><code>grep -c '"ma":"ok"' nhat-ky.log</code> so với tổng <code>tools/call</code></td></tr>
+<tr><td>5</td><td>Thời gian một lượt phân tích chấp nhận được với chức năng lớn (ghi số thực tế)</td><td>Trường <code>ms</code> và <code>chiPhiUsd</code> trong nhật ký</td></tr>
+<tr><td>6</td><td>Nhật ký ghi đúng tên Jira từng người, không có token, không có code</td><td><code>grep -c "Bearer" nhat-ky.log</code> phải 0</td></tr>
+<tr><td>7</td><td>Tester đánh giá tóm tắt đủ dùng để viết testcase (có / không / thiếu gì)</td><td>Hỏi trực tiếp</td></tr>
+</tbody></table></div>
+
+<h2 id="quay-lui"><span class="num">08</span>Quay lui</h2>
+<div class="cards">
+<div class="card"><h3>Dừng khẩn cấp (30 giây)</h3><p>Trên server: <code>pkill -f "tools/code-insight/server.js"</code>. Tester mất đọc mã ngay; chạy test và mọi công cụ khác không ảnh hưởng.</p></div>
+<div class="card"><h3>Tắt cho mọi tester</h3><p>Đặt <code>"bat": false</code> trong <code>config/code-insight.json</code> rồi push. Kit tự gỡ <code>.mcp.json</code> của nó ở máy tester; họ quay lại <code>bb.js</code> (cần quyền Bitbucket như trước).</p></div>
+<div class="card"><h3>Rút một người</h3><p>Xoá tên khỏi <code>quyen.danhSach</code> (hoặc rút quyền tạo ticket dự án EPB nếu dùng <code>quyen-jira</code>) rồi khởi động lại cổng; cổng nhớ xác thực tối đa 5 phút.</p></div>
+</div>
+
+<h2 id="ngay-dau"><span class="num">09</span>Theo dõi trong ngày đầu</h2>
+<pre>cd /opt/dev/jenkins/jenkins/insight/data
+tail -f nhat-ky.log                                              # xem trực tiếp
+grep '"method":"tools/call"' nhat-ky.log | tail -20              # các lượt hỏi
+grep -c '"ma":"ok"' nhat-ky.log; grep -c 'loi-worker' nhat-ky.log
+grep -o '"chiPhiUsd":[0-9.]*' nhat-ky.log | tail -20             # chi phí từng lượt (tự cộng)
+cat han-muc.json                                                 # đếm lượt trong ngày theo người
+ss -ltnp 2>/dev/null | grep 8443; docker ps | head -3            # cổng và Docker còn sống</pre>
+<div class="tw"><table><thead><tr><th>Trường <code>ma</code> trong nhật ký</th><th>Nghĩa</th></tr></thead><tbody>
+<tr><td><code>ok</code></td><td>Trả kết quả (<code>cache:true</code> nếu lấy từ bộ nhớ đệm)</td></tr>
+<tr><td><code>dau-vao</code></td><td>Tham số sai hoặc câu hỏi bị từ chối (đòi in nguyên file / cấu hình)</td></tr>
+<tr><td><code>bi-loc-tu-choi</code></td><td>Bộ lọc loại kết quả vì có quá nhiều đoạn giống mã nguồn / bí mật</td></tr>
+<tr><td><code>loi-worker-thoat-loi</code></td><td>Worker chết; <code>chiTiet</code> có lý do (ví dụ <code>subtype=error_max_turns</code>)</td></tr>
+<tr><td><code>het-han-muc-worker</code>, <code>qua-dong-thoi</code></td><td>Hết lượt phân tích mới trong ngày / đang có 2 phân tích chạy dở</td></tr>
+<tr><td><code>chua-co-ban-chup</code>, <code>loi-chi-muc</code></td><td>Thiếu bản chụp hoặc chỉ mục không đầy đủ: kiểm Jenkins / script xuất</td></tr>
+</tbody></table></div>
+
+<h2 id="con-lai"><span class="num">10</span>Việc còn treo và rủi ro</h2>
+<div class="tw"><table><thead><tr><th>Việc</th><th>Vì sao cần</th><th>Mức</th></tr></thead><tbody>
+<tr><td>Chạy cổng bằng <code>systemd</code> thay vì <code>setsid nohup</code></td><td>Hiện cổng mất khi máy khởi động lại hoặc ai đó dừng tiến trình</td><td><span class="tag warn">nên làm sớm</span></td></tr>
+<tr><td>Nguồn tính phí: API key riêng / gói doanh nghiệp</td><td>Mọi lượt hỏi của tester đang tính vào gói Claude cá nhân của bạn và có giới hạn</td><td><span class="tag bad">trước khi mở rộng</span></td></tr>
+<tr><td>Cài gitleaks, bỏ <code>CI_GITLEAKS=tat</code></td><td>Bản chụp chưa được quét bí mật</td><td><span class="tag bad">trước khi mở rộng</span></td></tr>
+<tr><td>Mạng worker chỉ ra được <code>api.anthropic.com</code> (egress)</td><td>Container hiện có đường ra internet đầy đủ</td><td><span class="tag warn">nên làm</span></td></tr>
+<tr><td>Cron cập nhật bản chụp</td><td>Bản chụp hiện là lần chạy tay; mã mới của dev không tự vào</td><td><span class="tag warn">nên làm</span></td></tr>
+<tr><td>Chính sách dữ liệu: mã đi tới nhà cung cấp AI</td><td>Mọi phương án đều vậy; cần sếp / pháp chế duyệt</td><td><span class="tag bad">trước khi mở rộng</span></td></tr>
+<tr><td>Tester còn quyền Bitbucket thì cổng không chặn được họ</td><td>Cổng chỉ đáng tin sau khi thu hồi quyền</td><td><span class="tag hi">mục tiêu cuối</span></td></tr>
+</tbody></table></div>
+<div class="call warn"><p><strong>Rủi ro còn lại, nói thẳng:</strong> bộ lọc chặn chép nguyên văn nhưng không chặn được diễn đạt lại gần nguyên văn hay mã hoá chữ đơn giản nếu worker bị dụ. Giảm bằng hạn mức, cache, nhật ký và cam kết bảo mật của tester, không bằng bộ lọc. Chi tiết trong tài liệu 2.</p></div>
+
+<h2 id="mau"><span class="num">11</span>Mẫu tin nhắn</h2>
+<h3>Gửi DevOps</h3>
+<pre>Nhờ mở TCP 8443 tới 10.100.110.233 từ toàn bộ dải VPN/mạng nội bộ của tester (bao gồm 172.20.x.x),
+để chạy thử dịch vụ đọc mã nội bộ cho nhóm test. Dịch vụ chỉ nhận kết nối HTTPS có token Jira hợp lệ.
+Kèm theo (nếu được): chạy dịch vụ bằng systemd cho tài khoản easypos-dev-jenkins, và cài gitleaks trên máy này.</pre>
+<h3>Gửi tester</h3>
+<pre>Từ hôm nay kit có cổng đọc mã mới: bạn không cần quyền Bitbucket để Claude phân tích code.
+1) Bật VPN, bấm CAP-NHAT.cmd.
+2) Bấm đúp CAI-CODE-INSIGHT.cmd, làm theo dòng "→" dưới mỗi [X] cho tới khi 0 lỗi.
+3) Mở phiên Claude MỚI trong thư mục kit, chọn CHO PHÉP máy chủ MCP "code-insight".
+4) Khi giao việc, nêu rõ tên repo (ví dụ "repo easyposbackend") và hỏi từng phần.
+Lỗi không tự xử lý được: gửi tôi tệp %USERPROFILE%\.easypos-tester\cai-code-insight.log.
+Lưu ý: Claude chỉ trả bản tóm tắt, không in nguyên văn mã; hỏi đòi in file / cấu hình sẽ bị từ chối.</pre>
+
+<div class="footer"><span>EasyPOS tester kit · Tài liệu 1/2: Triển khai Code-Insight</span><span>28/10/2026 · sơ đồ vẽ theo phong cách diagram-design (SVG thuần)</span></div>
+</div>
+</body>
+</html>

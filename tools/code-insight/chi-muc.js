@@ -10,9 +10,10 @@ const fs = require('fs');
 const path = require('path');
 
 const N_MAC_DINH = 6;
-const TOKEN_RE = /[A-Za-z_$][A-Za-z0-9_$]*|\d+|[^\s\w]/g;
+// Token theo Unicode: chữ (kể cả tiếng Việt có dấu) là MỘT token, không bị tách thành mảnh (bản ASCII-only làm văn xuôi tiếng Việt trùng mã nguồn oan).
+const TOKEN_RE = /[\p{L}_$][\p{L}\p{N}_$]*|\p{N}+|[^\s\p{L}\p{N}_]/gu;
 const BO_QUA_THU_MUC = new Set(['.git', 'node_modules']);       // trùng với thư mục mà xuat-ban-chup.sh xoá khỏi bản chụp
-const MAGIC = 'EPCI2';
+const MAGIC = 'EPCI3';      // đổi định dạng token ⇒ chỉ mục cũ không dùng lại được (cổng tự dựng lại)
 
 /** Chuẩn hoá văn bản trước khi tách token / kiểm: NFKC (gộp dạng toàn chiều, dấu hợp…) và bỏ ký tự định dạng vô hình (U+200B, U+FEFF, điều khiển hai chiều…). */
 function chuan(text) { return String(text == null ? '' : text).normalize('NFKC').replace(/\p{Cf}/gu, ''); }

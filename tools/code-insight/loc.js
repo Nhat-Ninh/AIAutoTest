@@ -16,7 +16,8 @@
 const { quetBiMat } = require('../lib/bi-mat');
 const { chuan } = require('./chi-muc');
 
-const MAC_DINH = { chuoiToiDa: 400, tongToiDa: 8000, soCheToiDa: 8, tiLeCheToiDa: 0.4 };
+// nguongNgram: số cửa sổ n-gram trùng tối thiểu để coi là CHÉP mã (n = 6 ⇒ 3 cửa sổ = ≥ 8 token liền nhau). Trích ngắn kiểu `invoice.getStatus()` không bị che nhầm.
+const MAC_DINH = { chuoiToiDa: 400, tongToiDa: 8000, soCheToiDa: 8, tiLeCheToiDa: 0.4, nguongNgram: 3 };
 const NHAN = { che: '[đã che]', thamchieu: '[tham chiếu không hợp lệ]' };
 const THAM_CHIEU_RE = /^[\w$./@-]{1,160}(:\d{1,6}(-\d{1,6})?)?$/;
 // Ký tự cho phép trong văn bản tự do: xuống dòng / tab, ASCII in được, Latin-1 + Latin mở rộng (gồm chữ Việt dựng sẵn), dấu gạch, ngoặc kép thường, •, …, mũi tên, ·.
@@ -41,7 +42,7 @@ function giongMa(s) {
   if (/\w{1,60}\([^)]{0,80}\)\.\w{1,60}\(/.test(t)) yeu++;                                          // a(b).c(d)
   if (/\b\w{1,60}\s{0,3}(==|!=|<=|>=)\s{0,3}\w{1,60}/.test(t) && /[()]/.test(t)) yeu++;
   if (/\bnew\s+[A-Z]\w{0,60}\s*\(/.test(t)) yeu++;
-  return yeu >= 2;
+  return yeu >= 3;
 }
 
 /** Lớp 4: bí mật, địa chỉ nội bộ hoặc chuỗi giống mã hoá (băm / base64 dài)? */
@@ -78,7 +79,7 @@ function lamSachChuoi(s, max, ctx) {
   if (t.length > Math.max(max * 3, 1200)) lop = 'qua-dai';
   else if (KY_TU_LA_RE.test(t)) lop = 'ky-tu-la';
   else if (giongMa(t)) lop = 'ma';
-  else if (ctx.chiMuc && ctx.chiMuc.soTrung(t) > 0) lop = 'ngram';
+  else if (ctx.chiMuc && ctx.chiMuc.soTrung(t) >= ctx.cfg.nguongNgram) lop = 'ngram';
   else if (biMat(t)) lop = 'bimat';
   else if (giongMaHoa(t)) lop = 'ma-hoa';
   if (lop) return { text: NHAN.che, lop };
@@ -86,7 +87,7 @@ function lamSachChuoi(s, max, ctx) {
   return { text: t, lop: null };
 }
 
-function che(ctx, duong, lop) { ctx.daChe.push({ truong: duong, lop }); }
+function che(ctx, duong, lop, gt) { ctx.daChe.push({ truong: duong, lop, mau: gt === undefined ? '' : String(gt).slice(0, 100) }); }
 
 /* ---- lược đồ ---- */
 const Str = (max, o) => Object.assign({ t: 'str', max }, o || {});
@@ -101,14 +102,16 @@ function lamSachNut(v, nut, duong, ctx) {
       if (typeof v !== 'string') throw new LoiLoc('schema', duong + ': cần chuỗi');
       ctx.soChuoi++;
       if (nut.thamChieu) {
+        ctx.soThamChieu = (ctx.soThamChieu || 0) + 1;
         const t = chuan(v).trim();
+        const phan = t.split(/\s*[;,]\s*/).filter(Boolean);
         // Chỉ nhận "đường/dẫn:dòng" và (khi cổng cấp hàm kiểm) phải là TỆP CÓ THẬT trong bản chụp, dòng không vượt số dòng của tệp.
-        const hopLe = THAM_CHIEU_RE.test(t) && !t.includes('..') && !biMat(t) && (!ctx.kiemThamChieu || ctx.kiemThamChieu(t) === true);
-        if (!hopLe) { che(ctx, duong, 'tham-chieu'); return NHAN.thamchieu; }
-        return t;
+        const hopLe = phan.length >= 1 && phan.length <= 4 && phan.every(x => THAM_CHIEU_RE.test(x) && !x.includes('..') && !biMat(x) && (!ctx.kiemThamChieu || ctx.kiemThamChieu(x) === true));
+        if (!hopLe) { che(ctx, duong, 'tham-chieu', v); return NHAN.thamchieu; }
+        return phan.join(', ');
       }
       const r = lamSachChuoi(v, Math.min(nut.max || ctx.cfg.chuoiToiDa, ctx.cfg.chuoiToiDa), ctx);
-      if (r.lop) che(ctx, duong, r.lop); else ctx.vanBan.push(r.text);
+      if (r.lop) che(ctx, duong, r.lop, v); else ctx.vanBan.push(r.text);
       return r.text;
     }
     case 'enum':
@@ -160,15 +163,17 @@ function loc(raw, luocDo, opts) {
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) ket = lamSachNut(raw, luocDo, '', ctx);
     else throw new LoiLoc('schema', 'kết quả của worker không phải đối tượng JSON');
     // Chặn chia nhỏ mã thành nhiều mảnh ngắn (mỗi mảnh < N token nên không mảnh nào tự trùng): kiểm cả CHUỖI GHÉP theo thứ tự của toàn báo cáo.
-    if (ctx.chiMuc && ctx.vanBan.length > 1 && ctx.chiMuc.soTrung(ctx.vanBan.join(' ')) > 0) throw new LoiLoc('ngram-lien-chuoi', 'báo cáo có đoạn mã bị chia nhỏ qua nhiều mục');
+    if (ctx.chiMuc && ctx.vanBan.length > 1 && ctx.chiMuc.soTrung(ctx.vanBan.join(' ')) >= ctx.cfg.nguongNgram) throw new LoiLoc('ngram-lien-chuoi', 'báo cáo có đoạn mã bị chia nhỏ qua nhiều mục');
     if (!epTong(ket, cfg.tongToiDa)) throw new LoiLoc('qua-dai', 'báo cáo vượt giới hạn tổng và không cắt được');
   } catch (e) {
     if (e instanceof LoiLoc) return { ok: false, ma: e.ma, lyDo: e.message };
     return { ok: false, ma: 'loi-loc', lyDo: 'lỗi bộ lọc: ' + String(e && e.message || e).slice(0, 120) };
   }
-  const tiLe = ctx.soChuoi ? ctx.daChe.length / ctx.soChuoi : 0;
-  if (ctx.daChe.length > cfg.soCheToiDa || (ctx.daChe.length >= 3 && tiLe > cfg.tiLeCheToiDa)) {
-    return { ok: false, ma: 'che-qua-nhieu', lyDo: 'kết quả có quá nhiều đoạn giống mã nguồn / bí mật (' + ctx.daChe.length + '/' + ctx.soChuoi + ') — bị từ chối', daChe: ctx.daChe };
+  const cheNoiDung = ctx.daChe.filter(x => x.lop !== 'tham-chieu');
+  const soChuoiNoiDung = Math.max(1, ctx.soChuoi - ctx.daChe.filter(x => x.lop === 'tham-chieu').length - (ctx.soThamChieu || 0) + ctx.daChe.filter(x => x.lop === 'tham-chieu').length);
+  const tiLe = ctx.soChuoi ? cheNoiDung.length / Math.max(1, ctx.soChuoi - (ctx.soThamChieu || 0)) : 0;
+  if (cheNoiDung.length > cfg.soCheToiDa || (cheNoiDung.length >= 3 && tiLe > cfg.tiLeCheToiDa)) {
+    return { ok: false, ma: 'che-qua-nhieu', lyDo: 'kết quả có quá nhiều đoạn giống mã nguồn / bí mật (' + cheNoiDung.length + '/' + (ctx.soChuoi - (ctx.soThamChieu || 0)) + ') — bị từ chối', daChe: ctx.daChe };
   }
   return { ok: true, ket, daChe: ctx.daChe, catDai: ctx.catDai };
 }

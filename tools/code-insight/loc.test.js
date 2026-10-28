@@ -31,6 +31,8 @@ fs.writeFileSync(path.join(snap, 'build', 'gen', 'Gen.java'), 'return repoCache.
 fs.writeFileSync(path.join(snap, 'dist', 'main.js'), 'var tinhThueHoaDon = function a1 b2 c3 d4 e5 f6 g7 h8 i9 j10;\n');
 fs.writeFileSync(path.join(snap, 'application.yml'), 'spring.datasource.url jdbc mssql host epos dbname easyposbackoffice trust server certificate true\n');
 fs.writeFileSync(path.join(snap, 'Makefile'), 'deploy target release candidate build number alpha beta gamma delta epsilon zeta\n');
+// Bình luận tiếng Việt trong mã (rất phổ biến ở EasyPOS): bản tách token ASCII-only làm văn xuôi tiếng Việt trùng oan với chúng.
+fs.writeFileSync(path.join(snap, 'src', 'ViDu.java'), ['/**', ' * Tính tiền cho từng dòng hàng, cộng thuế và trừ chiết khấu, sau đó ghi sổ quỹ của ca bán hàng hôm nay.', ' * Người dùng nhập số lượng, hệ thống tính thuế và chiết khấu rồi lưu vào cơ sở dữ liệu của cửa hàng.', ' */', 'class ViDu { }'].join(String.fromCharCode(10)));
 fs.writeFileSync(path.join(snap, 'Doc.md'), 'the quick brown fox jumps over the lazy dog near the river bank today\n');
 fs.writeFileSync(path.join(snap, 'nhi-phan.bin'), Buffer.from([0, 1, 2, 3, 0, 255]));
 const chiMuc = CM.dung(path.join(tmp, 'easyposbackend'));
@@ -182,6 +184,35 @@ for (const [ten, s] of [
   const a1 = sach(); a1.tom_tat = 'if (a) { b(); }'; const a2 = sach(); a2.tom_tat = 'password = Abc12345xyz'; const a3 = sach(); a3.tom_tat = 'Điều kiện là invoice.getStatus() == STATUS_ISSUED && !invoice.isCancelled() && invoice.getTaxIssued() thì chặn';
   const nh = [a1, a2, a3].map(o => L.loc(o, LD, OPT).ket.tom_tat);
   ca('F13: mọi lý do che dùng CÙNG MỘT nhãn (không thành máy dò "câu này có trùng mã không")', nh[0] === nh[1] && nh[1] === nh[2] && nh[0] === L.NHAN.che, nh.join('|'));
+}
+
+/* ---- chỉnh sau lần chạy thật 28/10: tóm tắt hợp lệ bị che nhầm (23/36) ---- */
+{
+  let x = sach(); x.tom_tat = 'Kiểm tra invoice.getStatus() == STATUS rồi báo lỗi nếu đã phát hành';
+  r = L.loc(x, LD, OPT); ca('trích biểu thức ngắn (7 token liền nhau, 2 cửa sổ n-gram) KHÔNG bị coi là chép mã', r.ok && r.daChe.length === 0, JSON.stringify(r.daChe));
+  x = sach(); x.tom_tat = 'Điều kiện là invoice.getStatus() == STATUS_ISSUED && !invoice.isCancelled() && invoice.getTaxIssued() thì chặn';
+  r = L.loc(x, LD, OPT); ca('chép một dòng mã dài (nhiều cửa sổ liên tiếp) VẪN bị che', r.ok && r.ket.tom_tat === L.NHAN.che);
+  x = sach(); x.tom_tat = 'Luồng: Controller -> Service -> Repository -> CSDL; gọi invoice.getItems().stream() để duyệt dòng hàng';
+  r = L.loc(x, LD, OPT); ca('mô tả luồng dùng "->" và gọi chuỗi hàm KHÔNG bị che nhầm (tín hiệu yếu cần ≥ 3)', r.ok && r.daChe.length === 0, JSON.stringify(r.daChe));
+  const kt = (ref) => /^src\/InvoiceService\.java:\d+$/.test(ref) && +ref.split(':')[1] <= 9;
+  x = sach(); x.buoc = [{ mo_ta: 'Bước một', tham_chieu: 'src/InvoiceService.java:3, src/InvoiceService.java:5' }];
+  r = L.loc(x, LD, { chiMuc, kiemThamChieu: kt }); ca('tham_chieu nhiều mục (A:3, A:5) hợp lệ được giữ', r.ok && r.ket.buoc[0].tham_chieu === 'src/InvoiceService.java:3, src/InvoiceService.java:5', JSON.stringify(r.ket.buoc));
+  x = sach(); x.buoc = Array.from({ length: 5 }, (_, i) => ({ mo_ta: 'Bước ' + i + ' xử lý huỷ hoá đơn', tham_chieu: 'khong/co/tep' + i + '.java:1' }));
+  r = L.loc(x, LD, { chiMuc, kiemThamChieu: kt });
+  ca('agent bịa 5 tham chiếu (đã bị thay nhãn an toàn) KHÔNG làm cả kết quả bị từ chối', r.ok && r.ket.buoc.every(b => b.tham_chieu === L.NHAN.thamchieu), JSON.stringify(r.ok ? r.ket.buoc.length : r.lyDo));
+  x = sach(); x.buoc = Array.from({ length: 5 }, () => ({ mo_ta: 'if (a) { b(); }', tham_chieu: 'src/InvoiceService.java:3' }));
+  r = L.loc(x, LD, { chiMuc, kiemThamChieu: kt }); ca('nhưng 5 mô tả là code thật vẫn bị từ chối (ngưỡng tính theo nội dung)', !r.ok && r.ma === 'che-qua-nhieu', JSON.stringify(r));
+  ca('đoạn che ghi kèm lớp + 100 ký tự đầu để QUẢN TRỊ xem (không trả cho tester)', (() => { const y = sach(); y.tom_tat = 'if (a) { b(); }'; const q = L.loc(y, LD, OPT); return q.daChe[0].lop === 'ma' && /if \(a\)/.test(q.daChe[0].mau) && !JSON.stringify(q.ket).includes('if (a)'); })());
+}
+
+/* ---- lỗi gốc của lần chạy thật 28/10: văn xuôi tiếng Việt bị coi là trùng mã (token ASCII-only tách "hệ thống" thành mảnh) ---- */
+{
+  const vanXuoi = 'easyposbackend là backend JHipster cho hệ thống POS: tầng Controller nhận request REST đã qua xác thực JWT, ủy quyền cho Service xử lý nghiệp vụ, Service gọi Repository rồi trả kết quả dạng DTO kèm thông báo.';
+  ca('tiếng Việt có dấu: một TỪ là một token ("hệ thống POS" = 3 token, không bị tách thành mảnh)', CM.bamCacToken('hệ thống POS').length === 3);
+  ca('văn xuôi tiếng Việt KHÔNG trùng n-gram dù chỉ mục có nhiều bình luận tiếng Việt', chiMuc.soTrung(vanXuoi) === 0, 'soTrung=' + chiMuc.soTrung(vanXuoi));
+  ca('chép nguyên bình luận tiếng Việt trong mã VẪN bị phát hiện (≥ 3 cửa sổ liên tiếp)', chiMuc.soTrung('Tính tiền cho từng dòng hàng, cộng thuế và trừ chiết khấu, sau đó ghi sổ quỹ của ca bán hàng hôm nay.') >= 3);
+  const x = sach(); x.tom_tat = vanXuoi; const q = L.loc(x, LD, OPT);
+  ca('tóm tắt tiếng Việt thật qua bộ lọc không bị che', q.ok && q.daChe.length === 0, JSON.stringify(q.daChe));
 }
 
 /* ---- đầu vào tool ---- */

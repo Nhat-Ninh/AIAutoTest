@@ -245,29 +245,66 @@ function taoMayChu(cfg) {
     try { fs.mkdirSync(cfg.cache.thuMuc, { recursive: true }); const f = tepCache(khoa); const tam = f + '.' + ngauNhien() + '.tmp'; fs.writeFileSync(tam, JSON.stringify(v)); fs.renameSync(tam, f); } catch (e) { console.error('Không ghi được cache: ' + e.message); }
   }
 
+  /** Lưu bản thô bị từ chối + từng đoạn bị che (lớp, 100 ký tự đầu) vào <thư mục nhật ký>/tu-choi/ — quyền 600, giữ 30 tệp gần nhất. Tester KHÔNG bao giờ thấy. */
+  function luuTuChoi(nguoi, ten, n, ket, kqLoc, log) {
+    const dem = {}; for (const x of (kqLoc.daChe || [])) dem[x.lop] = (dem[x.lop] || 0) + 1;
+    log.lopChe = dem;
+    try {
+      const dir = path.join(path.dirname(cfg.nhatKy || path.join(cfg.cache.thuMuc, 'x')), 'tu-choi'); fs.mkdirSync(dir, { recursive: true });
+      const f = path.join(dir, new Date().toISOString().replace(/[:.]/g, '-') + '-' + ngauNhien() + '.json');
+      fs.writeFileSync(f, JSON.stringify({ nguoi, tool: ten, args: n, ma: kqLoc.ma, lyDo: kqLoc.lyDo, daChe: kqLoc.daChe, ket }, null, 1), { mode: 0o600 });
+      const ds = fs.readdirSync(dir).filter(x => x.endsWith('.json')).sort(); for (const cu of ds.slice(0, Math.max(0, ds.length - 30))) fs.unlinkSync(path.join(dir, cu));
+    } catch (e) { /* không lưu được thì thôi */ }
+  }
   const loiTool = (msg) => ({ isError: true, content: [{ type: 'text', text: msg }] });
   const vanBan = (t) => ({ content: [{ type: 'text', text: t }] });
   // Không đưa số đoạn bị che / lý do lọc cho tester (tránh thành "máy dò" xem câu nào trùng mã): chỉ ghi nhật ký quản trị.
   const dinhDang = (v) => '# Bản mã đã đọc (đang chạy trên DEV): ' + v.banMa + '\n' + JSON.stringify(v.ket, null, 2);
+
+  const chiMucTenTep = new Map();
+  /** { 'InvoiceService.java': ['src/…/InvoiceService.java', …] } của một bản chụp (bỏ .git / node_modules; tối đa 300 000 tệp); nhớ theo thư mục. */
+  function tepTheoTen(b) {
+    if (chiMucTenTep.has(b.thuMuc)) return chiMucTenTep.get(b.thuMuc);
+    const ra = Object.create(null); let dem = 0;
+    const di = (d, rel, sau) => {
+      if (sau > 40 || dem > 300000) return;
+      let ds; try { ds = fs.readdirSync(d, { withFileTypes: true }); } catch (e) { return; }
+      for (const e of ds) {
+        if (e.isSymbolicLink()) continue;
+        const r = rel ? rel + '/' + e.name : e.name;
+        if (e.isDirectory()) { if (e.name !== '.git' && e.name !== 'node_modules') di(path.join(d, e.name), r, sau + 1); }
+        else if (e.isFile()) { dem++; (ra[e.name] = ra[e.name] || []).length < 5 && ra[e.name].push(r); }
+      }
+    };
+    di(b.thuMuc, '', 0);
+    if (chiMucTenTep.size >= 6) chiMucTenTep.delete(chiMucTenTep.keys().next().value);
+    chiMucTenTep.set(b.thuMuc, ra);
+    return ra;
+  }
 
   /** Hàm kiểm trường tham_chieu cho bộ lọc: "đường/dẫn:dòng" phải là TỆP CÓ THẬT (không phải liên kết) trong bản chụp, dòng không vượt số dòng của tệp. */
   function taoKiemThamChieu(ban) {
     return (ref) => {
       const m = String(ref).match(/^(.+?)(?::(\d{1,6})(?:-(\d{1,6}))?)?$/);
       if (!m) return false;
-      const p = m[1].replace(/\\/g, '/').replace(/^\.\//, '');
-      if (p.startsWith('/') || p.includes('..') || p.length > 160) return false;
+      let p = m[1].replace(/\\/g, '/').replace(/^\.\//, '');
+      p = p.replace(/^\/snap\//, '').replace(/^\/+/, '');          // /snap/<repo>/… (đường dẫn trong container) và đường dẫn bắt đầu bằng /
+      if (p.includes('..') || p.length > 160) return false;
       if (m[2] && m[3] && +m[3] < +m[2]) return false;
       const dong = m[3] ? +m[3] : (m[2] ? +m[2] : 0);
+      const khongThuMuc = !p.includes('/');
       for (const b of ban) {
         let rel = p;
         for (const tienTo of [b.repo + '/' + b.sha + '/', b.repo + '/current/', b.repo + '/']) if (rel.startsWith(tienTo)) { rel = rel.slice(tienTo.length); break; }
-        const full = path.resolve(b.thuMuc, rel);
+        const ungVien = [path.resolve(b.thuMuc, rel)];
+        if (khongThuMuc) for (const r of tepTheoTen(b)[p] || []) ungVien.push(path.resolve(b.thuMuc, r));   // chỉ có tên tệp: tìm trong bản chụp (tối đa 5 tệp trùng tên)
+        for (const full of ungVien.slice(0, 6)) {
         if (!full.startsWith(b.thuMuc + path.sep)) continue;
         let st; try { st = fs.lstatSync(full); } catch (e) { continue; }
         if (!st.isFile() || st.size > 4 * 1024 * 1024) continue;
         if (!dong) return true;
         try { const txt = fs.readFileSync(full, 'utf8'); let n = 1; for (let i = 0; i < txt.length; i++) if (txt.charCodeAt(i) === 10) n++; if (dong <= n) return true; } catch (e) { /* tệp không đọc được: thử repo khác */ }
+        }
       }
       return false;
     };
@@ -322,6 +359,7 @@ function taoMayChu(cfg) {
         throw e;
       }
       Object.assign(log, { banMa, soLanWorker: lanThu, chiPhiUsd: raw && raw.meta && raw.meta.chiPhiUsd });
+      if (!kqLoc.ok) { luuTuChoi(nguoi, ten, n, raw && raw.ket, kqLoc, log); }
       if (!kqLoc.ok) return { kq: loiTool('Kết quả bị bộ lọc an toàn từ chối. Hãy hỏi cụ thể hơn, bằng lời, về luồng / quy tắc — không đòi mã nguồn.'), log: Object.assign(log, { ma: 'bi-loc-tu-choi', lyDo: kqLoc.lyDo }) };
       const v = { ket: kqLoc.ket, banMa, tao: new Date().toISOString() };
       ghiCache(khoa, v);
@@ -403,7 +441,7 @@ function taoMayChu(cfg) {
     }
   }
 
-  return { handler, hanMuc, banChupHienTai, xacThucNho };
+  return { handler, hanMuc, banChupHienTai, xacThucNho, layChiMuc, taoKiemThamChieu };
 }
 
 /* ---------------- --kiem và chạy ---------------- */
@@ -441,6 +479,15 @@ async function thuWorker(cfg) {
     const r = await chayWorker(cfg, yc);
     console.log('OK sau ' + Math.round((Date.now() - t0) / 1000) + ' giây. Chi phí: ' + JSON.stringify(r.meta));
     console.log('Kết quả thô (đầu): ' + JSON.stringify(r.ket).slice(0, 600));
+    // Chạy BỘ LỌC trên kết quả thô và in từng đoạn bị che (lớp + 100 ký tự đầu): chỉ quản trị thấy, dùng để chỉnh bộ lọc theo dữ liệu thật.
+    try {
+      const chiMuc = await t.layChiMuc(ban[0]);
+      const kq = loc(r.ket, tool.luocDo, { chiMuc, cfg: cfg.loc, kiemThamChieu: t.taoKiemThamChieu(ban) });
+      console.log('--- BỘ LỌC: ' + (kq.ok ? 'QUA' : 'TỪ CHỐI (' + kq.ma + ': ' + kq.lyDo + ')') + ' · che ' + (kq.daChe || []).length + ' đoạn ---');
+      const dem = {}; for (const x of (kq.daChe || [])) dem[x.lop] = (dem[x.lop] || 0) + 1;
+      console.log('Theo lớp: ' + JSON.stringify(dem));
+      for (const x of (kq.daChe || []).slice(0, 25)) console.log('  [' + x.lop + '] ' + x.truong + ' :: ' + JSON.stringify(x.mau));
+    } catch (e) { console.log('Không chạy được bộ lọc thử: ' + e.message); }
   } catch (e) {
     console.log('LỖI (' + (e.ma || '?') + '): ' + e.message);
     if (e.stderr) { console.log('--- stderr của worker ---'); console.log(e.stderr); }

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vận hành và bài học Code-Insight</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f5f5f5;--paper-2:#ececec;--ink:#2d3142;--muted:#4f5d75;--soft:#7a8399;--rule:rgba(45,49,66,.12);--accent:#eb6c36;--accent-tint:rgba(235,108,54,.08);--link:#2e5aa8;--ok:#2f7d4f;--ok-tint:rgba(47,125,79,.09);--warn:#b7791f;--warn-tint:rgba(183,121,31,.10);--bad:#b3392f;--bad-tint:rgba(179,57,47,.08);
+--sans:'Geist',system-ui,'Segoe UI',sans-serif;--serif:'Instrument Serif','Times New Roman',serif;--mono:'Geist Mono',ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15171f;--paper-2:#1d2029;--ink:#e8eaf0;--muted:#aab2c5;--soft:#7f889d;--rule:rgba(232,234,240,.14);--accent-tint:rgba(235,108,54,.14);--link:#7fa6e8;--ok-tint:rgba(47,125,79,.2);--warn-tint:rgba(183,121,31,.2);--bad-tint:rgba(179,57,47,.2)}}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);padding:3rem 1rem;line-height:1.6;font-size:.95rem}
+.container{max-width:1060px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
+h1{font-family:var(--serif);font-size:clamp(2rem,3vw+1rem,2.9rem);font-weight:400;letter-spacing:-.02em;line-height:1.1;margin-bottom:.75rem}
+h2{font-family:var(--serif);font-size:1.7rem;font-weight:400;line-height:1.2;margin:3.2rem 0 .5rem;padding-top:1.5rem;border-top:1px solid var(--rule)}
+h2 .num{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;color:var(--accent);display:block;margin-bottom:.35rem}
+h3{font-size:.98rem;font-weight:600;margin:1.6rem 0 .5rem}
+p{color:var(--muted);max-width:78ch;margin-bottom:.85rem}
+p strong,li strong,td strong{color:var(--ink);font-weight:600}
+.subtitle{font-size:1.05rem;color:var(--muted);max-width:66ch}
+.meta{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;margin-top:1.1rem;font-family:var(--mono);font-size:.72rem;color:var(--soft)}
+.toc{margin:1.8rem 0 0;padding:1.1rem 1.4rem;background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;columns:2;column-gap:2rem}
+.toc a{display:block;color:var(--muted);text-decoration:none;font-size:.85rem;padding:.18rem 0;break-inside:avoid}
+.toc a:hover{color:var(--ink)}.toc a span{font-family:var(--mono);font-size:.7rem;color:var(--soft);margin-right:.6rem}
+.diagram{margin:1.4rem 0 .4rem;overflow-x:auto}.diagram svg{width:100%;min-width:860px;display:block}
+.caption{font-family:var(--mono);font-size:.7rem;color:var(--soft);margin-bottom:1.2rem}
+table{width:100%;border-collapse:collapse;margin:1rem 0 1.4rem;background:var(--paper-2);border:1px solid var(--rule);font-size:.82rem}
+th{font-family:var(--mono);font-size:.64rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--rule)}
+td{padding:.55rem .8rem;border-bottom:1px solid var(--rule);color:var(--muted);vertical-align:top}tr:last-child td{border-bottom:none}
+.tw{overflow-x:auto}.tw table{min-width:680px}
+code{font-family:var(--mono);font-size:.78em;background:rgba(122,131,153,.16);padding:.08em .35em;border-radius:3px;color:var(--ink)}
+pre{font-family:var(--mono);font-size:.76rem;line-height:1.55;background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:.9rem 1.1rem;overflow-x:auto;margin:.6rem 0 1.1rem;color:var(--ink)}
+ul.pl,ol.st{color:var(--muted);max-width:78ch;margin:0 0 1rem 1.2rem}ul.pl li,ol.st li{margin-bottom:.35rem}
+.tag{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.1rem .45rem;border:1px solid var(--rule);border-radius:2px;color:var(--muted);white-space:nowrap}
+.tag.ok{color:var(--ok);border-color:var(--ok)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}.tag.hi{color:var(--accent);border-color:var(--accent)}
+.call{border-left:3px solid var(--accent);background:var(--accent-tint);padding:.7rem 1rem;margin:1.1rem 0;max-width:80ch;border-radius:0 4px 4px 0}.call p{margin:0;color:var(--ink)}
+.call.ok{border-color:var(--ok);background:var(--ok-tint)}.call.warn{border-color:var(--warn);background:var(--warn-tint)}.call.bad{border-color:var(--bad);background:var(--bad-tint)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.2rem 0}
+.card{background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:1.1rem}.card h3{margin:0 0 .5rem;font-size:.9rem}.card p{font-size:.84rem;margin:0}
+.phase{border:1px solid var(--rule);border-radius:6px;background:var(--paper-2);padding:1rem 1.2rem;margin:1rem 0}.phase>h3{margin-top:0}
+.phase .who{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.3rem}
+.phase dl{display:grid;grid-template-columns:110px 1fr;gap:.3rem 1rem;font-size:.85rem;margin-top:.6rem}.phase dt{font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);padding-top:.15rem}.phase dd{color:var(--muted)}
+.footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--rule);font-family:var(--mono);font-size:.72rem;color:var(--soft);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+@media (max-width:760px){body{padding:2rem 1rem}.cards{grid-template-columns:1fr}.toc{columns:1}.phase dl{grid-template-columns:1fr}}
+@media print{body{padding:0;background:#fff}.diagram{overflow:visible}.diagram svg{min-width:0}h2{break-after:avoid}table,pre,.card,.phase{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <p class="eyebrow">Tài liệu 2 / 2 · Vận hành, bảo trì, hành trình và bài học · 28/10/2026</p>
+  <h1>Vận hành và bài học từ Code-Insight</h1>
+  <p class="subtitle">Hiểu luồng hệ thống, biết mình đã làm gì từ A đến Z và vì sao, vận hành hằng ngày, sửa lỗi khi hỏng, và rút ra những gì áp dụng được cho công việc DevOps.</p>
+  <div class="meta"><span>Dự án: EasyPOS tester kit</span><span>Máy chủ: 10.100.110.233 (Jenkins agent DEV)</span><span>Thư mục: /opt/dev/jenkins/jenkins/insight</span></div>
+  <nav class="toc" aria-label="Mục lục">
+    <a href="#tom-tat"><span>01</span>Tóm tắt và bài toán</a>
+    <a href="#kien-truc"><span>02</span>Kiến trúc và thành phần</a>
+    <a href="#luong"><span>03</span>Luồng một câu hỏi và các lớp bảo vệ</a>
+    <a href="#hanh-trinh"><span>04</span>Bạn đã làm gì, từ A đến Z</a>
+    <a href="#hang-ngay"><span>05</span>Vận hành hằng ngày</a>
+    <a href="#loi"><span>06</span>Bảo trì khi có lỗi</a>
+    <a href="#cau-hinh"><span>07</span>Tham chiếu cấu hình</a>
+    <a href="#bao-mat"><span>08</span>Bảo mật và rủi ro còn lại</a>
+    <a href="#hoc"><span>09</span>Học được gì cho DevOps</a>
+    <a href="#phu-luc"><span>10</span>Phụ lục: bản đồ tệp, lệnh nhanh</a>
+  </nav>
+</header>
+
+<h2 id="tom-tat"><span class="num">01</span>Tóm tắt và bài toán</h2>
+<p>Bộ kit auto test EasyPOS cần Claude đọc mã nguồn để phân tích chức năng. Trước đây công cụ <code>bb.js</code> gọi Bitbucket bằng <strong>tài khoản cá nhân của từng tester</strong>, tức mỗi người có quyền đọc cả kho. Tài khoản bị lộ hoặc người nghỉ việc đều kéo theo lộ toàn bộ mã; hook trên máy tester lại do chính tester kiểm soát nên không phải ranh giới bảo mật.</p>
+<p>Giải pháp là <strong>Code-Insight</strong>: đưa ranh giới bảo mật lên server. Claude trên máy tester chỉ gọi 4 tool cố định tới một cổng; cổng cho một "worker" (Claude chạy trong Docker, chỉ đọc) đọc <strong>bản chụp sạch</strong> của mã đang chạy trên DEV, rồi <strong>bộ lọc</strong> loại hết đoạn giống mã nguồn và bí mật trước khi trả bản tóm tắt. Tester không có token Bitbucket và không nhận mã nguyên văn.</p>
+<div class="tw"><table>
+<thead><tr><th>Phương án đã cân nhắc</th><th>Kết luận</th></tr></thead>
+<tbody>
+<tr><td>Giữ nguyên, tester dùng quyền Bitbucket riêng</td><td>Loại: đúng nỗi lo ban đầu</td></tr>
+<tr><td>Cổng đọc mã bằng một token Bitbucket chỉ-đọc (viết trước đó)</td><td>Làm xong rồi bị rollback; thay bằng hướng bản chụp vì không cần token Bitbucket nào nữa</td></tr>
+<tr><td>Đặt kit và repo lên server, người dùng chỉ chat (gợi ý của sếp)</td><td>Chưa chọn toàn phần: agent có shell trên máy chủ, tester mất quan sát trình duyệt, tốn nhiều tuần; lấy phần hợp lý (đọc mã ở server)</td></tr>
+<tr><td><strong>Code-Insight: cổng MCP + worker cô lập + bộ lọc</strong></td><td><strong>Chọn.</strong> Giữ nguyên trải nghiệm chat của tester, chỉ thay phần đọc mã</td></tr>
+</tbody></table></div>
+
+<h2 id="kien-truc"><span class="num">02</span>Kiến trúc và thành phần</h2>
+<p>Hai vùng: <strong>máy tester</strong> (không tin cậy) chỉ có Claude Code và một cầu nối nhỏ; <strong>server</strong> (tin cậy) giữ bản chụp mã, worker và bộ lọc. Chỉ một đường đi qua ranh giới: yêu cầu HTTPS đi lên, bản tóm tắt đã lọc đi xuống.</p>
+<div class="diagram"><svg viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kiến trúc tổng thể Code-Insight">
+<defs>
+<marker id="b1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f5d75"/></marker>
+<marker id="b2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2e5aa8"/></marker>
+<marker id="b3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#eb6c36"/></marker>
+</defs>
+<g font-family="Geist,Segoe UI,sans-serif" text-anchor="middle">
+<rect x="14" y="40" width="230" height="400" rx="8" fill="rgba(45,49,66,.02)" stroke="rgba(45,49,66,.2)" stroke-dasharray="6,4"/><text x="129" y="58" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace" letter-spacing="1.2">MÁY TESTER · KHÔNG TIN CẬY</text>
+<rect x="280" y="40" width="500" height="400" rx="8" fill="rgba(45,49,66,.02)" stroke="rgba(45,49,66,.28)" stroke-dasharray="6,4"/><text x="530" y="58" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace" letter-spacing="1.2">SERVER 10.100.110.233 · VÙNG TIN CẬY</text>
+
+<rect x="34" y="90" width="190" height="64" rx="6" fill="#fff" stroke="#2d3142"/><text x="129" y="117" font-size="12" font-weight="600" fill="#2d3142">Claude Code</text><text x="129" y="135" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">VS Code · chat của tester</text>
+<rect x="34" y="215" width="190" height="72" rx="6" fill="#fff" stroke="#2d3142"/><text x="129" y="240" font-size="12" font-weight="600" fill="#2d3142">Cầu nối stdio</text><text x="129" y="257" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">code-insight-proxy.js</text><text x="129" y="272" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">token Jira + chứng chỉ</text>
+<rect x="34" y="340" width="190" height="64" rx="6" fill="rgba(122,131,153,.1)" stroke="#7a8399"/><text x="129" y="366" font-size="11" font-weight="600" fill="#2d3142">CAI-CODE-INSIGHT.cmd</text><text x="129" y="384" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">kiểm + ghi .mcp.json</text>
+
+<rect x="300" y="90" width="190" height="84" rx="6" fill="#fff" stroke="#2d3142"/><text x="395" y="115" font-size="12" font-weight="600" fill="#2d3142">Cổng MCP :8443</text><text x="395" y="133" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">server.js · HTTPS tự ký</text><text x="395" y="148" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">xác thực · hạn mức · cache</text><text x="395" y="163" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">nhật ký · hàng đợi</text>
+<rect x="570" y="90" width="190" height="84" rx="6" fill="#fff" stroke="#2d3142"/><text x="665" y="115" font-size="12" font-weight="600" fill="#2d3142">Worker (Docker)</text><text x="665" y="133" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">claude -p · Read/Grep/Glob</text><text x="665" y="148" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">--read-only · cap-drop ALL</text><text x="665" y="163" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">--user uid:gid</text>
+<rect x="300" y="235" width="190" height="72" rx="6" fill="rgba(235,108,54,.08)" stroke="#eb6c36"/><text x="395" y="260" font-size="12" font-weight="600" fill="#2d3142">Bộ lọc output</text><text x="395" y="277" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">loc.js · 4 lớp + tham chiếu</text><text x="395" y="292" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">n-gram (chi-muc.js)</text>
+<rect x="570" y="235" width="190" height="72" rx="6" fill="rgba(45,49,66,.05)" stroke="#4f5d75"/><text x="665" y="260" font-size="12" font-weight="600" fill="#2d3142">Bản chụp mã (:ro)</text><text x="665" y="277" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">snap/&lt;repo&gt;/&lt;commit&gt;/</text><text x="665" y="292" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">.insight: api · bang · commits</text>
+<rect x="300" y="350" width="190" height="64" rx="6" fill="rgba(45,49,66,.05)" stroke="#4f5d75"/><text x="395" y="376" font-size="11" font-weight="600" fill="#2d3142">data/: cache · nhật ký</text><text x="395" y="393" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">han-muc.json · chỉ mục .idx</text>
+<rect x="570" y="350" width="190" height="64" rx="6" fill="#fff" stroke="#2d3142"/><text x="665" y="376" font-size="11" font-weight="600" fill="#2d3142">xuat-tat-ca.sh</text><text x="665" y="393" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">xuat-ban-chup.sh · cron</text>
+
+<rect x="810" y="90" width="176" height="60" rx="6" fill="rgba(45,49,66,.03)" stroke="rgba(45,49,66,.3)"/><text x="898" y="116" font-size="12" font-weight="600" fill="#2d3142">Jira</text><text x="898" y="133" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">ai là ai · quyền EPB</text>
+<rect x="810" y="190" width="176" height="60" rx="6" fill="rgba(45,49,66,.03)" stroke="rgba(45,49,66,.3)"/><text x="898" y="216" font-size="12" font-weight="600" fill="#2d3142">API Claude</text><text x="898" y="233" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">điều khoản retention</text>
+<rect x="810" y="350" width="176" height="64" rx="6" fill="rgba(45,49,66,.03)" stroke="rgba(45,49,66,.3)"/><text x="898" y="376" font-size="12" font-weight="600" fill="#2d3142">Jenkins workspace</text><text x="898" y="393" font-size="9" fill="#4f5d75" font-family="Geist Mono,monospace">dev-pos/easypos-dev-*</text>
+
+<path d="M129 154 V215" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#b1)"/><text x="160" y="190" font-size="9" fill="#7a8399" font-family="Geist Mono,monospace">stdio</text>
+<path d="M224 251 H300" stroke="#2e5aa8" stroke-width="1.4" marker-end="url(#b2)"/><text x="262" y="238" font-size="9" fill="#2e5aa8" font-family="Geist Mono,monospace">HTTPS/MCP</text>
+<path d="M490 132 H570" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#b1)"/><text x="530" y="124" font-size="9" fill="#7a8399" font-family="Geist Mono,monospace">giao việc</text>
+<path d="M665 174 V235" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#b1)"/><text x="700" y="208" font-size="9" fill="#7a8399" font-family="Geist Mono,monospace">đọc :ro</text>
+<path d="M570 160 L440 235" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#b1)"/><text x="470" y="205" font-size="9" fill="#7a8399" font-family="Geist Mono,monospace">JSON thô</text>
+<path d="M395 235 V174" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#b1)"/><text x="360" y="208" font-size="9" fill="#7a8399" font-family="Geist Mono,monospace">đã lọc</text>
+<path d="M395 90 V76 H898 V90" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#b2)"/><text x="650" y="72" font-size="9" fill="#2e5aa8" font-family="Geist Mono,monospace">hỏi Jira: token này là ai, có quyền không?</text>
+<path d="M760 150 L810 205" stroke="#2e5aa8" stroke-width="1.3" marker-end="url(#b2)"/><text x="800" y="170" font-size="9" fill="#2e5aa8" font-family="Geist Mono,monospace">prompt + mã</text>
+<path d="M810 385 H760" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#b1)"/><text x="785" y="402" font-size="9" fill="#7a8399" font-family="Geist Mono,monospace">git archive</text>
+<path d="M665 350 V307" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#b1)"/>
+<path d="M395 307 V350" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#b1)"/>
+<path d="M129 340 V300" fill="none" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="4,3"/>
+<text x="500" y="466" font-size="13" font-style="italic" fill="#4f5d75" font-family="Instrument Serif,serif">tester không có token Bitbucket, không clone được, chỉ nhận bản tóm tắt đã lọc</text>
+</g>
+<g font-family="Geist,Segoe UI,sans-serif" font-size="9"><rect x="14" y="448" width="12" height="9" rx="2" fill="rgba(235,108,54,.08)" stroke="#eb6c36"/><text x="32" y="456" fill="#4f5d75">Chốt chặn bảo mật</text><line x1="130" y1="452" x2="146" y2="452" stroke="#2e5aa8" stroke-width="1.4" marker-end="url(#b2)"/><text x="152" y="456" fill="#4f5d75">Qua mạng (HTTPS)</text><line x1="250" y1="452" x2="266" y2="452" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#b1)"/><text x="272" y="456" fill="#4f5d75">Nội bộ</text></g>
+</svg></div>
+<p class="caption">Hình 1 · Kiến trúc tổng thể và ranh giới bảo mật</p>
+
+<h3>Mỗi thành phần là một tệp (và việc của nó)</h3>
+<div class="tw"><table>
+<thead><tr><th>Thành phần</th><th>Tệp</th><th>Việc</th></tr></thead>
+<tbody>
+<tr><td>Cổng MCP</td><td><code>tools/code-insight/server.js</code></td><td>Nhận yêu cầu, xác thực bằng token Jira (nhớ 5 phút), kiểm quyền, hạn mức theo người, cache theo commit, hàng đợi worker, nhật ký; <code>--kiem</code>, <code>--thu-claude</code>, <code>--thu-worker</code> để chẩn đoán</td></tr>
+<tr><td>Danh mục tool</td><td><code>tools.js</code></td><td>4 tool (<code>phan_tich_jira</code>, <code>giai_thich_luong</code>, <code>liet_ke_api</code>, <code>bang_db_lien_quan</code>), kiểm đầu vào, lược đồ đầu ra, nhiệm vụ giao worker</td></tr>
+<tr><td>Bộ lọc</td><td><code>loc.js</code>, <code>chi-muc.js</code></td><td>Chuẩn hoá Unicode, che đoạn giống code / bí mật / IP nội bộ, so khớp n-gram (6 token) với chỉ mục băm của mã, kiểm tham chiếu tệp:dòng thật, đóng khi không chắc</td></tr>
+<tr><td>Worker</td><td><code>worker-claude.js</code>, <code>Dockerfile</code></td><td>Dựng lệnh <code>docker run … claude -p</code> với Read/Grep/Glob, dontAsk, gắn bản chụp <code>:ro</code>, lời nhắc hệ thống (không chép mã, ngân sách lượt)</td></tr>
+<tr><td>Bản chụp</td><td><code>xuat-ban-chup.sh</code>, <code>xuat-tat-ca.sh</code>, <code>anh-xa.txt</code></td><td><code>git archive</code>, xoá cấu hình / khoá / nhị phân, tạo <code>.insight/</code>, quét gitleaks, đổi <code>current</code> nguyên tử, giữ 5 bản</td></tr>
+<tr><td>Máy tester</td><td><code>tools/tester/code-insight-cai.js</code>, <code>code-insight-proxy.js</code>, <code>CAI-CODE-INSIGHT.cmd</code></td><td>Ghi <code>.mcp.json</code> theo <code>config/code-insight.json</code>, cầu nối stdio, nút bấm kiểm 7 chặng</td></tr>
+<tr><td>Hàng rào kit</td><td><code>hooks/guard-easypos.js</code>, <code>hooks/session-rules.js</code></td><td>Khi cổng bật chặn Claude gọi thẳng Bitbucket; nạp dòng nhắc dùng tool <code>code-insight</code></td></tr>
+</tbody></table></div>
+
+<h2 id="luong"><span class="num">03</span>Luồng một câu hỏi và các lớp bảo vệ</h2>
+<p>Từ lúc tester gõ câu hỏi đến lúc nhận tóm tắt có 7 chặng. Cache giúp câu lặp lại trả ngay, không gọi worker.</p>
+<div class="diagram"><svg viewBox="0 0 1000 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Luồng xử lý một câu hỏi">
+<defs><marker id="c1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f5d75"/></marker><marker id="c2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2f7d4f"/></marker></defs>
+<g font-family="Geist,Segoe UI,sans-serif" text-anchor="middle" font-size="11">
+<rect x="6" y="50" width="128" height="76" rx="6" fill="#fff" stroke="#2d3142"/><text x="70" y="70" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace">1</text><text x="70" y="88" font-weight="600" fill="#2d3142">Câu hỏi</text><text x="70" y="105" font-size="9" fill="#4f5d75">Claude gọi tool</text><text x="70" y="118" font-size="9" fill="#4f5d75">qua cầu nối</text>
+<rect x="150" y="50" width="128" height="76" rx="6" fill="#fff" stroke="#2d3142"/><text x="214" y="70" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace">2</text><text x="214" y="88" font-weight="600" fill="#2d3142">Xác thực</text><text x="214" y="105" font-size="9" fill="#4f5d75">Jira · quyền · hạn mức</text><text x="214" y="118" font-size="9" fill="#4f5d75">kiểm đầu vào</text>
+<rect x="294" y="50" width="128" height="76" rx="6" fill="rgba(47,125,79,.09)" stroke="#2f7d4f"/><text x="358" y="70" font-size="9" fill="#2f7d4f" font-family="Geist Mono,monospace">3</text><text x="358" y="88" font-weight="600" fill="#2d3142">Cache?</text><text x="358" y="105" font-size="9" fill="#4f5d75">khoá = tool + câu hỏi</text><text x="358" y="118" font-size="9" fill="#4f5d75">+ commit</text>
+<rect x="438" y="50" width="128" height="76" rx="6" fill="#fff" stroke="#2d3142"/><text x="502" y="70" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace">4</text><text x="502" y="88" font-weight="600" fill="#2d3142">Worker</text><text x="502" y="105" font-size="9" fill="#4f5d75">Docker đọc bản chụp</text><text x="502" y="118" font-size="9" fill="#4f5d75">trả JSON thô</text>
+<rect x="582" y="50" width="128" height="76" rx="6" fill="rgba(235,108,54,.08)" stroke="#eb6c36"/><text x="646" y="70" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace">5</text><text x="646" y="88" font-weight="600" fill="#2d3142">Bộ lọc</text><text x="646" y="105" font-size="9" fill="#4f5d75">che / từ chối;</text><text x="646" y="118" font-size="9" fill="#4f5d75">bị từ chối: viết lại 1 lần</text>
+<rect x="726" y="50" width="128" height="76" rx="6" fill="#fff" stroke="#2d3142"/><text x="790" y="70" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace">6</text><text x="790" y="88" font-weight="600" fill="#2d3142">Lưu cache</text><text x="790" y="105" font-size="9" fill="#4f5d75">chỉ kết quả đã lọc</text><text x="790" y="118" font-size="9" fill="#4f5d75">ghi nhật ký</text>
+<rect x="870" y="50" width="124" height="76" rx="6" fill="#fff" stroke="#2d3142"/><text x="932" y="70" font-size="9" fill="#eb6c36" font-family="Geist Mono,monospace">7</text><text x="932" y="88" font-weight="600" fill="#2d3142">Trả tóm tắt</text><text x="932" y="105" font-size="9" fill="#4f5d75">+ "bản mã"</text><text x="932" y="118" font-size="9" fill="#4f5d75">repo@commit</text>
+<path d="M134 88 H150 M278 88 H294 M422 88 H438 M566 88 H582 M710 88 H726 M854 88 H870" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#c1)"/>
+<path d="M358 126 V210 H932 V126" fill="none" stroke="#2f7d4f" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#c2)"/><text x="645" y="228" fill="#2f7d4f" font-size="11" font-family="Geist Mono,monospace">cache trúng: bỏ qua 4–6, trả ngay, không tốn lượt worker</text>
+<text x="500" y="268" fill="#4f5d75" font-size="12">Lỗi ở bất kỳ chặng nào ⇒ trả lỗi chung cho tester, chi tiết chỉ ghi nhật ký (đóng khi không chắc)</text>
+</g></svg></div>
+<p class="caption">Hình 2 · Bảy chặng xử lý một lượt hỏi</p>
+<div class="tw"><table>
+<thead><tr><th>Lớp bảo vệ</th><th>Chặn cái gì</th><th>Ở đâu</th></tr></thead>
+<tbody>
+<tr><td>Xác thực + quyền</td><td>Người lạ, token sai / hết hạn, người chưa được phép</td><td><code>server.js</code> (Jira <code>/myself</code>, danh sách hoặc quyền <code>CREATE_ISSUES</code>)</td></tr>
+<tr><td>Hạn mức, đồng thời, khoá IP</td><td>Hỏi dồn, đốt tiền, dò token (10 lần sai/phút/IP)</td><td><code>server.js</code></td></tr>
+<tr><td>Kiểm đầu vào</td><td>"In nguyên file", đòi cấu hình / mật khẩu, repo ngoài danh sách</td><td><code>tools.js</code></td></tr>
+<tr><td>Cô lập worker</td><td>Đọc ngoài bản chụp, ghi, gọi mạng, quyền root</td><td>Docker <code>--read-only --cap-drop ALL --user</code>, mount <code>:ro</code>, <code>dontAsk</code>, luật chặn đọc cấu hình</td></tr>
+<tr><td>Bộ lọc output</td><td>Code, bí mật, IP nội bộ, Unicode giả, mã chia nhỏ, tham chiếu giả</td><td><code>loc.js</code> + chỉ mục n-gram</td></tr>
+<tr><td>Bản chụp sạch</td><td>Cấu hình, khoá, <code>.git</code>, nhị phân khỏi tầm đọc của worker</td><td><code>xuat-ban-chup.sh</code> + gitleaks</td></tr>
+<tr><td>Nhật ký</td><td>Phát hiện lạm dụng sau sự kiện</td><td><code>data/nhat-ky.log</code> (không có token, không có code)</td></tr>
+</tbody></table></div>
+
+<h2 id="hanh-trinh"><span class="num">04</span>Bạn đã làm gì, từ A đến Z</h2>
+<p>Chín giai đoạn, mỗi giai đoạn nói rõ làm gì, vì sao, kết quả và bài học. Đây cũng là thứ tự để dựng lại hệ thống trên một máy mới.</p>
+<div class="diagram"><svg viewBox="0 0 1000 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chín giai đoạn">
+<defs><marker id="d1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f5d75"/></marker></defs>
+<g font-family="Geist,Segoe UI,sans-serif" text-anchor="middle" font-size="10">
+<rect x="4" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="56" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">A</text><text x="56" y="80" font-weight="600" fill="#2d3142">Quyết định</text><text x="56" y="96" fill="#4f5d75" font-size="9">chọn hướng</text>
+<rect x="114" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="166" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">B</text><text x="166" y="80" font-weight="600" fill="#2d3142">Khảo sát</text><text x="166" y="96" fill="#4f5d75" font-size="9">JumpServer, 233</text>
+<rect x="224" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="276" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">C</text><text x="276" y="80" font-weight="600" fill="#2d3142">Bản chụp</text><text x="276" y="96" fill="#4f5d75" font-size="9">18 repo</text>
+<rect x="334" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="386" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">D</text><text x="386" y="80" font-weight="600" fill="#2d3142">Worker</text><text x="386" y="96" fill="#4f5d75" font-size="9">Docker, image</text>
+<rect x="444" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="496" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">E</text><text x="496" y="80" font-weight="600" fill="#2d3142">Cổng + TLS</text><text x="496" y="96" fill="#4f5d75" font-size="9">cấu hình, chạy</text>
+<rect x="554" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="606" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">F</text><text x="606" y="80" font-weight="600" fill="#2d3142">Đăng nhập</text><text x="606" y="96" fill="#4f5d75" font-size="9">Claude trong Docker</text>
+<rect x="664" y="40" width="104" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="716" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">G</text><text x="716" y="80" font-weight="600" fill="#2d3142">Mạng + client</text><text x="716" y="96" fill="#4f5d75" font-size="9">8443, cầu nối</text>
+<rect x="774" y="40" width="104" height="70" rx="6" fill="rgba(235,108,54,.08)" stroke="#eb6c36"/><text x="826" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">H</text><text x="826" y="80" font-weight="600" fill="#2d3142">Chẩn đoán</text><text x="826" y="96" fill="#4f5d75" font-size="9">lỗi worker</text>
+<rect x="884" y="40" width="108" height="70" rx="6" fill="#fff" stroke="#2d3142"/><text x="938" y="60" fill="#eb6c36" font-size="9" font-family="Geist Mono,monospace">I</text><text x="938" y="80" font-weight="600" fill="#2d3142">Tối ưu</text><text x="938" y="96" fill="#4f5d75" font-size="9">nhanh, bỏ giới hạn</text>
+<path d="M108 75 H114 M218 75 H224 M328 75 H334 M438 75 H444 M548 75 H554 M658 75 H664 M768 75 H774 M878 75 H884" stroke="#4f5d75" stroke-width="1.3" marker-end="url(#d1)"/>
+<text x="500" y="150" fill="#4f5d75" font-size="12">Mỗi giai đoạn có một cổng kiểm: lệnh chạy ra kết quả gì thì mới sang giai đoạn sau</text>
+</g></svg></div>
+<p class="caption">Hình 3 · Chín giai đoạn của hành trình</p>
+
+<div class="phase"><div class="who">A · Quyết định</div><h3>Chọn hướng giải bài toán bảo mật mã nguồn</h3>
+<dl><dt>Làm gì</dt><dd>Phân tích rủi ro (quyền Bitbucket rộng, hook có thể tắt), so sánh ba hướng, chọn cổng MCP + worker cô lập + bộ lọc theo tài liệu thiết kế.</dd>
+<dt>Vì sao</dt><dd>Ranh giới bảo mật phải ở nơi tester không điều khiển được (server), và trải nghiệm chat của tester không đổi.</dd>
+<dt>Kết quả</dt><dd>Nhánh <code>newchapter</code>; mọi thứ mặc định TẮT để máy tester đã cài không bị ảnh hưởng.</dd>
+<dt>Bài học</dt><dd>Làm "cờ tắt mặc định" cho tính năng mới; đánh giá phương án trước khi code.</dd></dl></div>
+
+<div class="phase"><div class="who">B · Khảo sát hạ tầng</div><h3>Biết mình đang đứng ở đâu trước khi cài</h3>
+<dl><dt>Làm gì</dt><dd>Vào máy <code>10.100.110.233</code> qua JumpServer (MobaXterm), xem <code>/opt/dev/jenkins/jenkins/</code> và <code>workspace/dev-pos/easypos-dev-*</code>.</dd>
+<dt>Phát hiện</dt><dd>233 là <strong>Jenkins agent</strong> (chỉ có <code>caches remoting tools workspace</code>, không có <code>secrets/</code>), tài khoản dùng chung <code>easypos-dev-jenkins</code>; web DEV ở <code>10.100.140.9:8082</code>. Port 22 không SSH thẳng được vì qua bastion.</dd>
+<dt>Quyết định</dt><dd>Không bao giờ trỏ cổng/worker vào workspace Jenkins (có <code>.git</code>, có thể có credential): dùng bản chụp riêng.</dd>
+<dt>Lệnh chính</dt><dd><code>ls /opt/dev/jenkins/jenkins/workspace/dev-pos</code>, <code>node -v</code>, <code>docker ps</code></dd></dl></div>
+
+<div class="phase"><div class="who">C · Bản chụp mã</div><h3>Xuất bản chụp sạch của 18 repo DEV</h3>
+<dl><dt>Làm gì</dt><dd>Chép <code>xuat-ban-chup.sh</code>, <code>xuat-tat-ca.sh</code>, <code>anh-xa.txt</code> vào <code>/opt/dev/jenkins/jenkins/insight/</code>, chạy với đường dẫn tuyệt đối.</dd>
+<dt>Vì sao</dt><dd><code>git archive</code> chỉ lấy tệp được git theo dõi ở đúng commit, bỏ <code>.git</code>; script xoá <code>application*.yml</code>, khoá, <code>docker-compose</code>, thư mục build, tệp &gt; 2 MB; tạo <code>.insight/</code> (commits, changes, api, bang).</dd>
+<dt>Kết quả</dt><dd><code>Tổng: OK=18 · bỏ qua=0 · lỗi=0</code>; <code>snap/&lt;repo&gt;/&lt;commit&gt;/</code> và liên kết <code>current</code>.</dd>
+<dt>Lỗi đã gặp</dt><dd>Dùng đường dẫn tương đối nên bản chụp ghi nhầm vào <code>insight/insight/snap</code>; <code>ls snap</code> rỗng. Sửa: luôn dùng đường dẫn tuyệt đối. Máy dùng <code>CI_GITLEAKS=tat</code> vì chưa có gitleaks (chỉ để thử).</dd></dl></div>
+
+<div class="phase"><div class="who">D · Worker Docker</div><h3>Dựng "nơi Claude đọc mã" bị nhốt</h3>
+<dl><dt>Làm gì</dt><dd><code>docker build -t insight-worker:latest tools/code-insight</code> (image Node + Claude Code CLI, không chứa mã hay khoá).</dd>
+<dt>Vì sao</dt><dd>Worker chạy cùng tài khoản dùng chung của Jenkins; không có Docker thì nó đọc được cả khoá SSH deploy. Container: <code>--read-only --cap-drop ALL --pids-limit --memory --cpus</code>, bản chụp mount <code>:ro</code>.</dd>
+<dt>Lỗi đã gặp</dt><dd><code>permission denied … /var/run/docker.sock</code>: tài khoản chưa thuộc nhóm <code>docker</code>. Nhờ admin <code>usermod -aG docker easypos-dev-jenkins</code>, đăng nhập lại. SELinux là <code>Disabled</code> nên không cần cờ <code>selinux</code>.</dd>
+<dt>Sửa mã</dt><dd>Container chạy với <code>--user uid:gid</code> của người chạy cổng để đọc được bản chụp quyền 750.</dd></dl></div>
+
+<div class="phase"><div class="who">E · Cổng và TLS</div><h3>Cấu hình, chứng chỉ, chạy cổng</h3>
+<dl><dt>Làm gì</dt><dd>Chép <code>cau-hinh.pilot-pc.mau.json</code> thành <code>cau-hinh.json</code>, sửa đường dẫn Linux, Username Jira, <code>bare:false</code>; tạo chứng chỉ tự ký bằng <code>openssl req -x509 … -addext "subjectAltName=IP:10.100.110.233" -addext "basicConstraints=critical,CA:FALSE"</code>; đổi cổng 8443; chạy <code>--kiem</code> rồi <code>setsid nohup node server.js …</code>.</dd>
+<dt>Vì sao</dt><dd>Token Jira đi trong tiêu đề nên bắt buộc HTTPS; cấu hình HTTP chỉ được nghe <code>127.0.0.1</code> (cổng tự từ chối cấu hình trái).</dd>
+<dt>Kết quả</dt><dd><code>Code-Insight nghe ở https://0.0.0.0:8443/mcp</code>.</dd></dl></div>
+
+<div class="phase"><div class="who">F · Đăng nhập Claude</div><h3>Cho worker dùng tài khoản Claude của bạn</h3>
+<dl><dt>Làm gì</dt><dd><code>docker run -it --rm insight-worker:latest claude setup-token</code>: mở liên kết ở trình duyệt, duyệt bằng email Claude, nhận token; dán vào <code>read -rs CLAUDE_CODE_OAUTH_TOKEN; export …</code> trong phiên khởi động cổng.</dd>
+<dt>Vì sao</dt><dd>Không muốn dùng API key; token nằm trong biến môi trường, không ghi ra tệp. Chế độ <code>--bare</code> không đọc đăng nhập tài khoản nên đặt <code>"bare": false</code>.</dd>
+<dt>Kiểm</dt><dd><code>npx -y @anthropic-ai/claude-code -p "…" --output-format json …</code> ra <code>"result":"OK"</code>, xác nhận mọi cờ hợp lệ.</dd>
+<dt>Lưu ý</dt><dd>Token cá nhân chỉ phù hợp pilot; chạy thật cần API key hoặc gói doanh nghiệp.</dd></dl></div>
+
+<div class="phase"><div class="who">G · Mạng và client</div><h3>Thông đường từ máy tester tới cổng</h3>
+<dl><dt>Mạng</dt><dd>Cổng 8100 bị tường lửa (curl hết giờ, mã 28) trong khi 8443 được mở cho VPN (curl "từ chối", mã 7 = đường thông, chưa có dịch vụ). Đổi sang 8443.</dd>
+<dt>Chứng chỉ</dt><dd>Tải <code>cong.crt</code> về, đặt thành <code>config/code-insight-ca.pem</code> (Windows từng tự thêm đuôi <code>.crt</code>, phải đổi tên).</dd>
+<dt>Lỗi đã gặp</dt><dd>VS Code báo <code>SDK auth failed: Dynamic Client Registration rejected (HTTP 404)</code>: cách nối HTTP + <code>headersHelper</code> không gửi được token, cổng trả 401, Claude chuyển sang OAuth mà cổng không có.</dd>
+<dt>Sửa</dt><dd>Chuyển sang <strong>cầu nối stdio</strong> <code>code-insight-proxy.js</code>: Claude tự chạy nó, nó đọc token Jira + chứng chỉ rồi gọi cổng. Không còn OAuth, không đụng TLS toàn máy. Viết <code>CAI-CODE-INSIGHT.cmd</code> để kiểm 7 chặng.</dd></dl></div>
+
+<div class="phase"><div class="who">H · Chẩn đoán worker</div><h3>"Worker phân tích gặp sự cố" nghĩa là gì</h3>
+<dl><dt>Công cụ</dt><dd>Thêm <code>--thu-claude</code> (chạy đúng lệnh docker của worker với câu hỏi tầm thường) và <code>--thu-worker</code> (một lượt worker thật, in lỗi gốc). Cổng cũng ghi lý do thật của Claude (<code>subtype</code>, <code>lượt</code>, <code>đã tốn</code>) vào nhật ký.</dd>
+<dt>Lỗi 1</dt><dd><code>docker.sock permission denied</code> (xem D).</dd>
+<dt>Lỗi 2</dt><dd><code>error_max_turns</code>: Claude chạm 15 lượt, tốn 0,60 USD, kết quả bị bỏ. Câu hỏi "huỷ hoá đơn" quá rộng và không chỉ định repo nên quét 18 repo.</dd>
+<dt>Sửa</dt><dd>Lời nhắc hệ thống nêu ngân sách lượt và dặn chọn tối đa 3 repo khi không chỉ định; nâng mặc định lên 25 lượt, 1,5 USD, 420 giây.</dd></dl></div>
+
+<div class="phase"><div class="who">I · Tối ưu</div><h3>Nhanh và sâu cho chức năng lớn</h3>
+<dl><dt>Bỏ giới hạn</dt><dd><code>maxTurns: 0</code>, <code>maxBudgetUsd: 0</code> (không giới hạn), chỉ còn <code>hetGioMs: 900000</code> (15 phút) làm chốt chặn cuối.</dd>
+<dt>Tăng tốc</dt><dd>Script xuất sinh thêm <code>.insight/api.txt</code> (mọi endpoint, bằng <code>grep</code>, vài giây) và <code>.insight/bang.txt</code> (entity / bảng); worker được dặn đọc chúng trước và đọc song song. Bớt hàng chục lượt Grep tốn LLM.</dd>
+<dt>Chú ý</dt><dd>Bản chụp cũ không có hai tệp này: phải xuất lại bằng <code>CI_XUAT_LAI=1</code> và dùng <code>xuat-ban-chup.sh</code> <strong>mới</strong> đặt ở đúng thư mục <code>insight/</code> (nơi <code>xuat-tat-ca.sh</code> gọi), không chỉ trong <code>kit/</code>.</dd></dl></div>
+
+<div class="call"><p><strong>Trạng thái hiện tại:</strong> cổng, worker, bản chụp, mạng (8443), client và chẩn đoán đã chạy. Còn chờ: xuất lại bản chụp để có chỉ mục tra nhanh, một lượt hỏi thật ra <code>"ma":"ok"</code> sau khi bỏ giới hạn, nhờ DevOps mở 8443 cho dải tester, đưa nhánh vào <code>main</code>, pilot với tester (tài liệu 1).</p></div>
+
+<h2 id="hang-ngay"><span class="num">05</span>Vận hành hằng ngày</h2>
+<div class="tw"><table>
+<thead><tr><th>Việc</th><th>Lệnh / cách làm</th></tr></thead>
+<tbody>
+<tr><td>Xem cổng còn sống</td><td><code>ss -ltnp | grep 8443</code> · <code>curl -sk https://127.0.0.1:8443/health</code> (ra <code>ok</code>) · <code>tail -5 data/cong.log</code></td></tr>
+<tr><td>Khởi động / khởi động lại</td><td><pre style="margin:.3rem 0">cd /opt/dev/jenkins/jenkins/insight/kit
+read -rs CLAUDE_CODE_OAUTH_TOKEN; export CLAUDE_CODE_OAUTH_TOKEN
+pkill -f "tools/code-insight/server.js"
+setsid nohup node tools/code-insight/server.js --cau-hinh ../cau-hinh.json &gt; ../data/cong.log 2&gt;&amp;1 &lt; /dev/null &amp;</pre></td></tr>
+<tr><td>Dừng</td><td><code>pkill -f "tools/code-insight/server.js"</code></td></tr>
+<tr><td>Cập nhật bản chụp (mã dev mới)</td><td><code>bash …/insight/xuat-tat-ca.sh /opt/dev/jenkins/jenkins/workspace/dev-pos …/insight/anh-xa.txt …/insight/snap</code>; đặt cron mỗi 15 phút: <code>*/15 * * * * flock -n $HOME/insight/xuat.lock bash $HOME/insight/xuat-tat-ca.sh … &gt;&gt; $HOME/insight/logs/xuat.log 2&gt;&amp;1</code></td></tr>
+<tr><td>Thêm / bớt tester</td><td>Sửa <code>quyen.danhSach</code> trong <code>cau-hinh.json</code> (hoặc <code>quyen.kieu: "quyen-jira"</code>), khởi động lại cổng</td></tr>
+<tr><td>Thêm repo</td><td>Thêm dòng vào <code>anh-xa.txt</code> và tên vào <code>repo</code> trong <code>cau-hinh.json</code>, xuất bản chụp, khởi động lại</td></tr>
+<tr><td>Xem ai hỏi gì, chi phí</td><td><code>grep tools/call data/nhat-ky.log | tail</code>; <code>grep -o '"chiPhiUsd":[0-9.]*' data/nhat-ky.log</code>; <code>cat data/han-muc.json</code></td></tr>
+<tr><td>Xoá cache một chức năng</td><td>Cache lưu ở <code>data/cache/*.json</code> (tên là băm); đổi commit thì tự mất hiệu lực; muốn xoá hết: <code>rm data/cache/*.json</code></td></tr>
+<tr><td>Đổi token Claude</td><td><code>docker run -it --rm insight-worker:latest claude setup-token</code>, dán lại khi khởi động cổng; thu hồi token cũ ở trang tài khoản</td></tr>
+<tr><td>Đổi chứng chỉ</td><td>Tạo lại <code>cong.crt/cong.key</code> (<code>openssl</code>, SAN đúng IP), khởi động lại cổng, chép <code>cong.crt</code> mới thành <code>config/code-insight-ca.pem</code> và push</td></tr>
+<tr><td>Cập nhật mã cổng</td><td>Chép tệp mới vào <code>…/insight/kit/tools/code-insight/</code>; nếu sửa script xuất bản chụp thì chép <strong>cả</strong> vào <code>…/insight/</code>; khởi động lại</td></tr>
+</tbody></table></div>
+
+<h2 id="loi"><span class="num">06</span>Bảo trì khi có lỗi</h2>
+<p>Quy trình chung: (1) xác định tầng lỗi (mạng, cổng, worker, bộ lọc, client), (2) đọc đúng log của tầng đó, (3) sửa, (4) chạy lại đúng bài kiểm của tầng đó. Dùng bảng dưới theo triệu chứng.</p>
+<div class="tw"><table>
+<thead><tr><th>Triệu chứng</th><th>Tầng</th><th>Nguyên nhân thường gặp</th><th>Cách sửa</th></tr></thead>
+<tbody>
+<tr><td>Nút bấm: "Mạng thông nhưng dịch vụ KHÔNG chạy"</td><td>Cổng</td><td>Tiến trình đã dừng (đóng phiên, khởi động lại máy)</td><td>Khởi động lại cổng (mục 05)</td></tr>
+<tr><td>Nút bấm: "Không tới được … hết giờ"</td><td>Mạng</td><td>VPN tắt hoặc tường lửa chặn cổng</td><td><code>Test-NetConnection &lt;ip&gt; -Port 8443</code>; <code>curl</code> mã 28 = bị chặn, mã 7 = thông; nhờ DevOps mở</td></tr>
+<tr><td>"Không tin chứng chỉ" / "Thiếu chứng chỉ"</td><td>Client</td><td><code>config/code-insight-ca.pem</code> thiếu, sai tên, hoặc chứng chỉ server đã đổi</td><td>Chép lại <code>cong.crt</code> đúng tên, push</td></tr>
+<tr><td>MCP trong VS Code: <code>Failed</code>, "chưa chạy"</td><td>Cổng / client</td><td>Cổng dừng; hoặc cần Reload Window sau khi đổi <code>.mcp.json</code></td><td>Khởi động cổng, Reload Window, <strong>không bấm Authenticate</strong></td></tr>
+<tr><td>401 token bị từ chối</td><td>Xác thực</td><td>PAT Jira hết hạn</td><td>Tester tạo lại PAT trong <code>jira.properties</code></td></tr>
+<tr><td>403 chưa được phép</td><td>Quyền</td><td>Tên chưa trong <code>danhSach</code></td><td>Thêm tên, khởi động lại</td></tr>
+<tr><td>Nhật ký <code>dau-vao</code>, "cau_hoi phải là chuỗi"</td><td>Client</td><td>Claude gọi tool với tham số rỗng (lần đầu)</td><td>Bình thường, Claude tự gọi lại</td></tr>
+<tr><td><code>loi-worker-thoat-loi</code> + <code>docker.sock permission denied</code></td><td>Worker</td><td>Tài khoản chưa thuộc nhóm <code>docker</code></td><td>Nhờ admin thêm nhóm, đăng nhập lại phiên mới</td></tr>
+<tr><td><code>loi-worker-…</code> + <code>subtype=error_max_turns</code> / <code>error_max_budget_usd</code></td><td>Worker</td><td>Câu hỏi rộng chạm giới hạn lượt / tiền</td><td>Đặt <code>maxTurns</code>, <code>maxBudgetUsd</code> lớn hơn hoặc 0; hướng dẫn hỏi hẹp, nêu repo</td></tr>
+<tr><td><code>loi-worker-het-gio</code></td><td>Worker</td><td>Quá <code>hetGioMs</code></td><td>Tăng <code>hetGioMs</code>; hỏi hẹp hơn</td></tr>
+<tr><td><code>invalid</code> / <code>authentication</code> trong <code>--thu-claude</code></td><td>Worker</td><td>Token Claude hết hạn hoặc chưa export trong phiên khởi động cổng</td><td>Tạo lại bằng <code>setup-token</code>, export rồi khởi động lại trong cùng phiên</td></tr>
+<tr><td><code>bi-loc-tu-choi</code> lặp lại với câu hỏi bình thường</td><td>Bộ lọc</td><td>Kết quả trích nhiều đoạn giống mã (tham chiếu giả, từ dài…)</td><td>Xem <code>lyDo</code> trong nhật ký; hỏi bằng lời về luồng / quy tắc; báo để chỉnh ngưỡng <code>loc</code></td></tr>
+<tr><td><code>chua-co-ban-chup</code> / <code>loi-chi-muc</code></td><td>Bản chụp</td><td>Chưa xuất, <code>current</code> hỏng, hoặc có tệp văn bản quá lớn khiến chỉ mục không đầy đủ</td><td>Chạy <code>xuat-tat-ca.sh</code>; <code>node server.js --kiem</code> xem repo nào thiếu</td></tr>
+<tr><td>Xuất bản chụp: "không có .git", "gitleaks", mã 5</td><td>Bản chụp</td><td>Workspace chưa build; thiếu gitleaks (đóng khi không chắc)</td><td>Cài gitleaks hoặc (chỉ khi thử) <code>CI_GITLEAKS=tat</code></td></tr>
+<tr><td>Kết quả toàn mảng rỗng</td><td>Worker</td><td>Mount sai hoặc thư mục rỗng</td><td><code>docker run --rm --user $(id -u):$(id -g) -v &lt;thư-mục-commit&gt;:/snap/easyposbackend:ro insight-worker:latest ls /snap/easyposbackend</code></td></tr>
+<tr><td>Lượt hỏi chậm bất thường</td><td>Worker</td><td>Hỏi không nêu repo; chưa có <code>api.txt</code>; máy đang bận build</td><td>Nêu repo; xuất lại bản chụp; xem <code>ms</code>, <code>soLanWorker</code> trong nhật ký</td></tr>
+</tbody></table></div>
+<h3>Đọc nhật ký <code>nhat-ky.log</code> (mỗi dòng một JSON)</h3>
+<ul class="pl"><li><code>t</code> thời điểm UTC · <code>nguoi</code> tên Jira · <code>http</code> mã HTTP · <code>ms</code> thời gian xử lý · <code>method</code> (<code>tools/call</code> là lượt hỏi thật) · <code>tool</code>, <code>args</code> (câu hỏi đã chuẩn hoá, cắt 300 ký tự).</li>
+<li><code>ma</code> kết quả: <code>ok</code>, <code>dau-vao</code>, <code>bi-loc-tu-choi</code>, <code>loi-worker-…</code>, <code>het-han-muc-worker</code>, <code>qua-dong-thoi</code>, <code>chua-co-ban-chup</code>, <code>loi-chi-muc</code>.</li>
+<li><code>banMa</code> repo@commit đã đọc · <code>cache</code> trúng bộ nhớ đệm hay không · <code>soLanWorker</code>, <code>chiPhiUsd</code> chi phí · <code>chiTiet</code> lý do lỗi (chỉ quản trị thấy).</li></ul>
+<div class="call ok"><p><strong>Quy tắc vàng khi gỡ lỗi:</strong> một thay đổi một lần, chạy lại đúng bài kiểm của tầng đó (<code>--kiem</code> cho cấu hình, <code>--thu-claude</code> cho Claude trong container, <code>--thu-worker</code> cho cả worker, nút <code>CAI-CODE-INSIGHT.cmd</code> cho phía tester). Đừng sửa nhiều tầng cùng lúc.</p></div>
+
+<h2 id="cau-hinh"><span class="num">07</span>Tham chiếu cấu hình</h2>
+<p>Tệp <code>/opt/dev/jenkins/jenkins/insight/cau-hinh.json</code> (ngoài git). Mẫu: <code>tools/code-insight/cau-hinh.mau.json</code>.</p>
+<div class="tw"><table>
+<thead><tr><th>Khoá</th><th>Ý nghĩa</th><th>Giá trị đang dùng / gợi ý</th></tr></thead>
+<tbody>
+<tr><td><code>lang.cong</code>, <code>lang.diaChi</code></td><td>Cổng và địa chỉ nghe</td><td><code>8443</code>, <code>0.0.0.0</code> (TLS bắt buộc nếu không phải <code>127.0.0.1</code>)</td></tr>
+<tr><td><code>lang.tls.cert/key</code></td><td>Chứng chỉ và khoá riêng</td><td><code>…/insight/data/cong.crt</code>, <code>cong.key</code> (quyền 600)</td></tr>
+<tr><td><code>jira.url</code>, <code>caFile</code></td><td>Nơi xác thực; CA nội bộ (ưu tiên hơn <code>boQuaKiemChungChi</code>)</td><td><code>https://jira-sds.softdreams.vn:8080</code></td></tr>
+<tr><td><code>quyen.kieu</code>, <code>danhSach</code></td><td>Ai được dùng</td><td><code>danh-sach</code> cho pilot; <code>quyen-jira</code> (quyền <code>CREATE_ISSUES</code> dự án EPB) khi mở rộng</td></tr>
+<tr><td><code>repo</code></td><td>Danh sách repo được phục vụ</td><td>18 repo, khớp <code>anh-xa.txt</code></td></tr>
+<tr><td><code>banChup.thuMuc</code></td><td>Gốc bản chụp</td><td><code>…/insight/snap</code></td></tr>
+<tr><td><code>worker.song</code>, <code>hangDoiToiDa</code></td><td>Worker chạy đồng thời, hàng đợi</td><td><code>1–2</code>; tăng khi nhiều tester (xem tải máy build)</td></tr>
+<tr><td><code>worker.hetGioMs</code></td><td>Chốt chặn thời gian một lượt</td><td><code>900000</code> (15 phút)</td></tr>
+<tr><td><code>worker.claude.maxTurns</code>, <code>maxBudgetUsd</code></td><td>Giới hạn lượt / tiền của một lượt phân tích; <strong>0 = không giới hạn</strong></td><td><code>0</code>, <code>0</code></td></tr>
+<tr><td><code>worker.claude.bare</code></td><td><code>--bare</code> không đọc đăng nhập tài khoản</td><td><code>false</code> khi dùng token tài khoản; <code>true</code> khi dùng API key</td></tr>
+<tr><td><code>worker.claude.model</code></td><td>Model (để trống = mặc định)</td><td>Thử A/B trên vài câu hỏi thật</td></tr>
+<tr><td><code>worker.claude.docker.*</code></td><td>Bắt buộc <code>bat:true</code>; <code>anh</code>, <code>mang</code>, <code>bonNho</code>, <code>cpu</code>, <code>selinux</code></td><td><code>insight-worker:latest</code>, <code>selinux:false</code> (máy này đã Disabled)</td></tr>
+<tr><td><code>gioiHan.*</code></td><td>Hạn mức theo người: yêu cầu/phút (20), /ngày (150), lượt worker mới/ngày (30–40), byte trả về/ngày, đồng thời (2)</td><td>Hạ <code>workerMoiNgay</code> (10–15) khi mới mở</td></tr>
+<tr><td><code>loc.*</code></td><td>Ngưỡng bộ lọc: chuỗi tối đa 400 ký tự, tổng 8000, che tối đa 8 đoạn hoặc 40%</td><td>Chỉ chỉnh khi bị chặn nhầm nhiều</td></tr>
+<tr><td><code>cache.hanGio</code></td><td>Cache báo cáo đã lọc</td><td><code>168</code> (7 ngày)</td></tr>
+<tr><td><code>chiMuc.n</code></td><td>Cỡ cửa sổ n-gram</td><td><code>6</code></td></tr>
+</tbody></table></div>
+<p><strong>Biến môi trường (không ghi tệp):</strong> <code>CLAUDE_CODE_OAUTH_TOKEN</code> (hoặc <code>ANTHROPIC_API_KEY</code>) · <code>HTTPS_PROXY</code> nếu máy ra internet qua proxy · <code>CI_GITLEAKS</code>, <code>CI_XUAT_LAI</code> cho script xuất bản chụp.</p>
+
+<h2 id="bao-mat"><span class="num">08</span>Bảo mật và rủi ro còn lại</h2>
+<p>Một agent độc lập đã rà soát mã và tái hiện được 9 lỗ hổng (ký tự vô hình, base64, mã chia nhỏ, tham chiếu giả, chỉ mục thiếu, worker thấy cả gốc, khoá nhà cung cấp lọt, ReDoS, nhãn che lộ lý do); đã sửa và có bộ thử. Nhưng bộ lọc vẫn có giới hạn:</p>
+<div class="tw"><table>
+<thead><tr><th>Rủi ro</th><th>Vì sao còn</th><th>Giảm bằng</th></tr></thead>
+<tbody>
+<tr><td>Diễn đạt lại gần nguyên văn, mã hoá chữ đơn giản (đảo ngược, rot13)</td><td>Bộ lọc từ vựng không có lời giải hoàn chỉnh</td><td>Hạn mức, cache, nhật ký, cam kết bảo mật của tester</td></tr>
+<tr><td>Hỏi dồn nhiều câu ghép lại một phần thiết kế</td><td>Mỗi câu hợp lệ</td><td>Hạn mức/ngày, theo dõi nhật ký</td></tr>
+<tr><td>Cổng thấy token Jira của mọi tester</td><td>Token đi trong tiêu đề</td><td>Chạy trên máy được bảo vệ; dùng CA nội bộ thay vì bỏ kiểm chứng chỉ</td></tr>
+<tr><td>Worker có đường ra internet đầy đủ</td><td>Chưa dựng mạng egress</td><td>Dựng <code>tools/code-insight/egress/</code> (proxy chỉ cho <code>api.anthropic.com</code>)</td></tr>
+<tr><td>Bản chụp chưa quét bí mật</td><td>Đang <code>CI_GITLEAKS=tat</code></td><td>Cài gitleaks, bỏ cờ này</td></tr>
+<tr><td>Mã đi tới nhà cung cấp AI</td><td>Bản chất của mọi phương án</td><td>Điều khoản retention / gói doanh nghiệp, sếp duyệt</td></tr>
+<tr><td>Tester còn quyền Bitbucket</td><td>Cổng không chặn được họ</td><td>Thu hồi quyền sau pilot</td></tr>
+</tbody></table></div>
+
+<h2 id="hoc"><span class="num">09</span>Học được gì cho DevOps</h2>
+<p>Dự án này là một bài thực hành DevOps trọn vẹn nhỏ gọn. Mỗi dòng dưới đây là một khái niệm, nơi bạn đã chạm vào nó, và cách mang sang công việc thật.</p>
+<div class="tw"><table>
+<thead><tr><th>Khái niệm</th><th>Bạn đã gặp ở đâu trong dự án</th><th>Áp dụng vào công việc DevOps</th></tr></thead>
+<tbody>
+<tr><td><strong>Ranh giới tin cậy</strong> (trust boundary)</td><td>Máy tester "không tin cậy", server "tin cậy"; hook phía client chỉ là nhắc nhở</td><td>Đặt kiểm soát ở nơi người dùng không điều khiển được; coi mọi thứ phía client là có thể bị bỏ qua</td></tr>
+<tr><td><strong>Quyền tối thiểu</strong> (least privilege)</td><td>Worker chỉ Read/Grep/Glob, container <code>--read-only --cap-drop ALL</code>, mount <code>:ro</code>, không Bash</td><td>Mỗi dịch vụ chỉ có đúng quyền cần; rà thường xuyên các tài khoản dùng chung (như <code>easypos-dev-jenkins</code>)</td></tr>
+<tr><td><strong>Cổng / reverse proxy / BFF</strong></td><td>Cổng MCP đứng giữa tester và nguồn nhạy cảm, gom xác thực, hạn mức, nhật ký</td><td>Mẫu API gateway: một điểm kiểm soát thay cho nhiều quyền rải rác</td></tr>
+<tr><td><strong>Uỷ quyền xác thực</strong></td><td>Dùng token Jira có sẵn để biết "ai là ai" thay vì tạo hệ tài khoản mới</td><td>Tái dùng IdP/SSO sẵn có; tránh nhân đôi nơi quản người dùng</td></tr>
+<tr><td><strong>Giới hạn tốc độ, hạn mức, cache</strong></td><td><code>gioiHan</code>, 429, cache theo commit, single-flight</td><td>Bảo vệ tài nguyên đắt (LLM, DB); cache khoá theo phiên bản dữ liệu</td></tr>
+<tr><td><strong>Nhật ký không chứa bí mật, chỉ-ghi-thêm</strong></td><td><code>nhat-ky.log</code> có người, tool, mã, chi phí; không token</td><td>Quan sát (observability) và điều tra sau sự cố; che dữ liệu nhạy cảm khi ghi log</td></tr>
+<tr><td><strong>Đóng khi không chắc</strong> (fail closed)</td><td>Jira hỏng, chỉ mục thiếu, lọc lỗi ⇒ từ chối, không cho qua</td><td>Chọn mặc định an toàn cho cổng xác thực/bảo mật; khác với "fail open" của dịch vụ cần luôn sống</td></tr>
+<tr><td><strong>Bí mật trong biến môi trường, không trong tệp/git</strong></td><td><code>read -rs …; export</code>, <code>-e VAR</code> chỉ truyền tên biến vào container</td><td>Quản lý bí mật (Vault, secret store); không để token trong lệnh, log, repo</td></tr>
+<tr><td><strong>Container và cô lập</strong></td><td>Dockerfile, <code>docker run</code> nhiều cờ, <code>--user</code>, nhóm <code>docker</code> ≈ root</td><td>Hiểu rủi ro của <code>docker.sock</code>, rootless/Podman, ánh xạ uid, SELinux (<code>:z</code>), mạng nội bộ + proxy egress</td></tr>
+<tr><td><strong>TLS tự ký, SAN, CA:FALSE, ghim chứng chỉ</strong></td><td><code>openssl req -x509 … subjectAltName</code>, chứng chỉ công khai đặt vào kit</td><td>PKI nội bộ; vì sao cần SAN đúng IP; phân phối chứng chỉ tin cậy đến client</td></tr>
+<tr><td><strong>Chẩn đoán mạng theo tầng</strong></td><td>curl mã 7 (từ chối) / 28 (hết giờ) / 35 (TLS); <code>ss -ltnp</code>; <code>Test-NetConnection</code></td><td>Phân biệt "không có dịch vụ" với "tường lửa chặn" ngay từ mã lỗi</td></tr>
+<tr><td><strong>Bastion / JumpServer</strong></td><td>Vào 233 qua JumpServer, tài khoản dùng chung, phiên được ghi</td><td>Truy cập đặc quyền có kiểm soát; vì sao cài dịch vụ trên máy build cần duyệt</td></tr>
+<tr><td><strong>Pipeline sinh artefact bất biến</strong></td><td><code>git archive</code> → làm sạch → quét bí mật → đổi <code>current</code> nguyên tử → giữ 5 bản</td><td>Build/Release một chiều; <code>ln -sfn</code> + <code>mv -T</code> là "blue/green" thu nhỏ; dọn bản cũ an toàn</td></tr>
+<tr><td><strong>Idempotent, an toàn khi chạy lại</strong></td><td><code>xuat-tat-ca.sh</code> chạy lại không lỗi, không ghi đè thư mục đang được đọc</td><td>Mọi script tự động (cron, CI) phải chạy lại được; dùng <code>flock</code> tránh chạy chồng</td></tr>
+<tr><td><strong>Feature flag, mặc định tắt, quay lui</strong></td><td><code>config/code-insight.json bat:false</code>; tự gỡ cấu hình khi tắt</td><td>Triển khai theo vòng (canary → pilot → toàn bộ) và luôn có đường lùi một dòng cấu hình</td></tr>
+<tr><td><strong>Triển khai theo giai đoạn có cổng kiểm</strong></td><td>Pilot trên máy bạn → 1–2 tester → cả nhóm → thu hồi quyền cũ</td><td>Tiêu chí nghiệm thu đo được trước khi mở rộng</td></tr>
+<tr><td><strong>Kiểm thử hạ tầng</strong></td><td>Jira giả + worker giả + cổng thật trong cùng tiến trình; smoke test Bash trong container Linux; test hook</td><td>Test với phụ thuộc giả; test script shell trên đúng hệ điều hành đích; test cả đường lỗi</td></tr>
+<tr><td><strong>Rà soát độc lập</strong></td><td>Agent thứ hai tái hiện 9 lỗ hổng mà người viết bỏ sót</td><td>Review chéo / red team cho thành phần bảo mật; viết test từ PoC của người rà</td></tr>
+<tr><td><strong>Vận hành dịch vụ có LLM</strong></td><td>Giới hạn lượt/tiền/thời gian, <code>error_max_turns</code>, prompt injection, chi phí mỗi lượt</td><td>Đo chi phí và độ trễ, đặt trần cứng, coi nội dung do người dùng là dữ liệu không phải chỉ dẫn</td></tr>
+<tr><td><strong>Giao thức MCP: stdio so với HTTP</strong></td><td>HTTP + header động không đáng tin trong VS Code ⇒ 401 ⇒ OAuth 404; cầu nối stdio giải quyết</td><td>Khi client là bên thứ ba, giảm phụ thuộc vào hành vi của họ; thêm lớp tương thích nhỏ ở phía mình</td></tr>
+<tr><td><strong>Công cụ chẩn đoán tích hợp sẵn</strong></td><td><code>--kiem</code>, <code>--thu-claude</code>, <code>--thu-worker</code>, nút <code>CAI-CODE-INSIGHT.cmd</code></td><td>Dịch vụ tốt có lệnh tự kiểm; nhật ký đủ để người trực không cần đoán</td></tr>
+<tr><td><strong>Giao tiếp và tài liệu</strong></td><td>Hướng dẫn từng bước, mẫu tin gửi DevOps/tester, bảng lỗi</td><td>Runbook và playbook: ai làm gì, lệnh nào, kết quả mong đợi, cách quay lui</td></tr>
+</tbody></table></div>
+
+<h3>Lộ trình tự học nếu muốn đào sâu (theo thứ tự)</h3>
+<ol class="st">
+<li><strong>Linux vận hành:</strong> <code>systemd</code> (viết unit cho cổng thay <code>nohup</code>), <code>cron</code>/<code>flock</code>, quyền tệp và <code>umask</code>, <code>ss</code>, <code>journalctl</code>.</li>
+<li><strong>Docker sâu hơn:</strong> mạng <code>internal</code> + proxy egress (có sẵn trong <code>tools/code-insight/egress/</code>), rootless/Podman, seccomp, giới hạn tài nguyên.</li>
+<li><strong>PKI và TLS:</strong> tự ký so với CA nội bộ, SAN, xoay chứng chỉ, kiểm tra bằng <code>openssl s_client</code>.</li>
+<li><strong>CI/CD:</strong> chuyển <code>xuat-tat-ca.sh</code> thành bước post-build Jenkins; thêm gitleaks, cảnh báo khi xuất lỗi.</li>
+<li><strong>Quan sát:</strong> đưa <code>nhat-ky.log</code> vào hệ thống log (ELK/Loki), vẽ dashboard chi phí, độ trễ, tỉ lệ <code>ok</code>.</li>
+<li><strong>Bảo mật ứng dụng:</strong> đọc lại <code>loc.js</code> và bộ thử <code>loc.test.js</code> (các kiểu lách đã gặp) để hiểu vì sao lọc từ vựng có giới hạn.</li></ol>
+
+<h3>Câu hỏi để tự kiểm tra (phỏng vấn / bảo vệ giải pháp)</h3>
+<ul class="pl">
+<li>Vì sao không để cổng đọc thẳng <code>/opt/dev/jenkins/jenkins/workspace</code>? <em>(workspace có <code>.git</code>, credential, cấu hình; bản chụp sạch + <code>:ro</code>)</em></li>
+<li>Vì sao hook trên máy tester không phải ranh giới bảo mật? <em>(tester kiểm soát máy)</em></li>
+<li>Curl trả mã 7 và mã 28 khác nhau thế nào về chẩn đoán? <em>(thông đường, chưa có dịch vụ / bị chặn)</em></li>
+<li>Vì sao phải chạy container bằng <code>--user</code> và vì sao nhóm <code>docker</code> nguy hiểm? <em>(quyền đọc bản chụp; nhóm docker ≈ root)</em></li>
+<li>Vì sao chuyển từ MCP HTTP sang stdio? <em>(401 ⇒ OAuth 404; không phụ thuộc cách client xử lý header/TLS)</em></li>
+<li>Bộ lọc chặn được gì và không chặn được gì? <em>(chặn chép nguyên văn; không chặn diễn đạt lại / mã hoá chữ đơn giản)</em></li>
+<li>Vì sao <code>current</code> đổi bằng liên kết tạm + <code>mv -T</code>? <em>(nguyên tử, không có khoảnh khắc thiếu)</em></li>
+<li>Làm thế nào quay lui toàn bộ trong 1 phút? <em>(<code>bat:false</code> + push, hoặc <code>pkill</code> trên server)</em></li></ul>
+
+<h2 id="phu-luc"><span class="num">10</span>Phụ lục: bản đồ tệp, lệnh nhanh</h2>
+<h3>Trên server <code>/opt/dev/jenkins/jenkins/insight/</code></h3>
+<div class="tw"><table>
+<thead><tr><th>Đường dẫn</th><th>Là gì</th></tr></thead>
+<tbody>
+<tr><td><code>kit/tools/code-insight/</code></td><td>Mã cổng, bộ lọc, worker, Dockerfile, script (bản chạy)</td></tr>
+<tr><td><code>kit/tools/lib/bi-mat.js</code></td><td>Mẫu quét bí mật dùng chung</td></tr>
+<tr><td><code>cau-hinh.json</code></td><td>Cấu hình thật (ngoài git, không chứa khoá API)</td></tr>
+<tr><td><code>xuat-ban-chup.sh</code>, <code>xuat-tat-ca.sh</code>, <code>anh-xa.txt</code></td><td>Xuất bản chụp (nơi <code>xuat-tat-ca.sh</code> gọi script con)</td></tr>
+<tr><td><code>snap/&lt;repo&gt;/&lt;commit&gt;/</code>, <code>current</code>, <code>CURRENT</code></td><td>Bản chụp (giữ 5 bản gần nhất), liên kết và tệp văn bản tương ứng</td></tr>
+<tr><td><code>data/cong.crt</code>, <code>cong.key</code></td><td>Chứng chỉ TLS (khoá quyền 600)</td></tr>
+<tr><td><code>data/nhat-ky.log</code>, <code>cong.log</code>, <code>han-muc.json</code>, <code>cache/</code>, <code>chi-muc/</code></td><td>Nhật ký, log tiến trình, đếm hạn mức, cache báo cáo, chỉ mục n-gram</td></tr>
+</tbody></table></div>
+<h3>Trong kit (máy bạn / tester)</h3>
+<div class="tw"><table>
+<thead><tr><th>Tệp</th><th>Việc</th></tr></thead>
+<tbody>
+<tr><td><code>config/code-insight.json</code>, <code>config/code-insight-ca.pem</code></td><td>Bật / tắt, địa chỉ cổng; chứng chỉ công khai</td></tr>
+<tr><td><code>CAI-CODE-INSIGHT.cmd</code></td><td>Nút bấm kiểm và cài cho tester</td></tr>
+<tr><td><code>tools/tester/code-insight-cai.js</code>, <code>code-insight-proxy.js</code></td><td>Ghi <code>.mcp.json</code>; cầu nối stdio</td></tr>
+<tr><td><code>tai-lieu/</code></td><td>HUONG-DAN-AP-DUNG (D15), HUONG-DAN-CODE-INSIGHT-DON-GIAN, HUONG-DAN-TESTER, hai tài liệu HTML này</td></tr>
+</tbody></table></div>
+<h3>Bộ thử (chạy từ thư mục kit)</h3>
+<pre>node tools/code-insight/loc.test.js            # bộ lọc + chỉ mục   (82 ca)
+node tools/code-insight/server.test.js         # cổng + worker giả  (101 ca)
+node tools/tester/code-insight-cai.test.js     # client + nút bấm   (47 ca)
+node tools/tester/code-insight-proxy.test.js   # cầu nối stdio      (13 ca)
+node hooks/guard-easypos.test.js               # hook               (153 ca)
+# bản chụp (cần Linux; trên Windows chạy trong container):
+docker run --rm -v "C:/easypos-tester-kit/tools/code-insight:/ci:ro" maven:3.9-eclipse-temurin-21 bash /ci/xuat-ban-chup.smoke.sh   # 35 ca</pre>
+<h3>Chẩn đoán nhanh trên server</h3>
+<pre>cd /opt/dev/jenkins/jenkins/insight/kit
+node tools/code-insight/server.js --cau-hinh ../cau-hinh.json --kiem          # cấu hình, Jira, bản chụp
+node tools/code-insight/server.js --cau-hinh ../cau-hinh.json --thu-claude    # Claude trong container
+node tools/code-insight/server.js --cau-hinh ../cau-hinh.json --thu-worker    # một lượt worker thật</pre>
+
+<div class="footer"><span>EasyPOS tester kit · Tài liệu 2/2: Vận hành, bảo trì và bài học Code-Insight</span><span>28/10/2026 · sơ đồ vẽ theo phong cách diagram-design (SVG thuần)</span></div>
+</div>
+</body>
+</html>

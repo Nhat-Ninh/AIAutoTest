@@ -49,6 +49,7 @@ process.stdin.on('end', async () => {
   if (/LEAK-NGRAM/.test(cau)) { ket = Object.assign({}, ket, { tom_tat: 'Điều kiện là invoice.getStatus() == STATUS_ISSUED && !invoice.isCancelled() && invoice.getTaxIssued() thì chặn' }); }
   if (/LEAK-MANY/.test(cau)) { ket = Object.assign({}, ket, { tom_tat: 'if (a) { b(); }', quy_tac: ['if (a) { b(); }', 'x = 1;', 'password = Abc12345xyz'], buoc: [{ mo_ta: 'int x = f();', tham_chieu: 'A:1' }, { mo_ta: 'SELECT a FROM b', tham_chieu: 'A:2' }] }); }
   if (/LEAK-REF/.test(cau)) { ket = Object.assign({}, ket, { buoc: [{ mo_ta: 'Bước một', tham_chieu: 'return.invoiceRepo.save.inv.setStatus.CANCELLED:12-14' }, { mo_ta: 'Bước hai', tham_chieu: 'src/InvoiceService.java:9999' }, { mo_ta: 'Bước ba', tham_chieu: 'src/InvoiceService.java:3' }] }); }
+  if (/REF-LA/.test(cau)) { ket = Object.assign({}, ket, { buoc: [{ mo_ta: 'Bước một', tham_chieu: '/snap/easyposbackend/src/InvoiceService.java:3' }, { mo_ta: 'Bước hai', tham_chieu: 'InvoiceService.java:5' }, { mo_ta: 'Bước ba', tham_chieu: 'easyposbackend/src/InvoiceService.java:2-4' }, { mo_ta: 'Bước bốn', tham_chieu: 'KhongCoTep.java:1' }] }); }
   if (/ENV/.test(cau)) { ket = { bang: [{ bang: 'invoice', cot: ['status'], ghi_chu: Object.keys(process.env).join(' ') }] }; }
   fs.appendFileSync(log, 'E ' + Date.now() + '\\n');
   process.stdout.write(JSON.stringify({ ket, meta: { chiPhiUsd: 0.01, soLuot: 3 } }));
@@ -255,6 +256,9 @@ const loi = (r) => !!(r.j && r.j.result && r.j.result.isError);
   r = await tool(pc, A, 'giai_thich_luong', { cau_hoi: 'LEAK-REF tham chiếu giả huỷ hoá đơn' });
   ca('F3: tham chiếu giả (chuỗi chữ rời / dòng quá số dòng) bị thay nhãn; tham chiếu thật (tệp có trong bản chụp, dòng hợp lệ) được giữ',
     !loi(r) && !/invoiceRepo/.test(text(r)) && (text(r).match(/\[tham chiếu không hợp lệ\]/g) || []).length === 2 && /"tham_chieu": "src\/InvoiceService\.java:3"/.test(text(r)), text(r));
+  r = await tool(pc, A, 'giai_thich_luong', { cau_hoi: 'REF-LA kiểu viết đường dẫn của worker huỷ hoá đơn' });
+  ca('tham chiếu kiểu worker hay viết: /snap/<repo>/…, chỉ tên tệp, <repo>/…:a-b đều được nhận; tên tệp không tồn tại bị thay nhãn',
+    !loi(r) && /"tham_chieu": "\/snap\/easyposbackend\/src\/InvoiceService\.java:3"|"tham_chieu": "snap\/easyposbackend\/src\/InvoiceService\.java:3"|"tham_chieu": "easyposbackend\/src\/InvoiceService\.java:3"/.test(text(r) + '') || (!loi(r) && (text(r).match(/InvoiceService\.java:/g) || []).length >= 3 && (text(r).match(/\[tham chiếu không hợp lệ\]/g) || []).length === 1), text(r));
   r = await tool(pc, A, 'giai_thich_luong', { cau_hoi: 'LEAK-CODE giải thích luồng khác' });
   ca('F13: thông báo từ chối / kết quả KHÔNG nêu số đoạn bị che hay lý do lọc cho tester', !/che-qua-nhieu|ngram|đoạn giống|Bộ lọc đã che/.test(text(r)));
   r = await tool(pc, A, 'giai_thich_luong', { cau_hoi: 'LEAK-MANY lần hai giải thích' });
