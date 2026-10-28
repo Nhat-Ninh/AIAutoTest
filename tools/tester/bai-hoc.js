@@ -165,7 +165,20 @@ function lenhThem(args) {
   }
   if (!ghi) { console.log(`\nXEM TRƯỚC (${bai.length} bài hợp lệ). Thêm --ghi để cho vào hộp thư chờ gửi.`); return; }
   if (vaoKho) { lenhMucLuc(['--ghi']); console.log(`\n✔ Đã ghi ${bai.length} bài vào kien-thuc/bai/. Người phụ trách: xem git diff rồi tự commit.`); }
-  else console.log(`\n✔ Đã nhận ${bai.length} bài (dùng được ngay trên máy này). Gửi lên kho chung: node tools/tester/dong-bo.js gui  (tự động, không cần git).`);
+  else {
+    console.log(`\n✔ Đã nhận ${bai.length} bài (dùng được ngay trên máy này).`);
+    tuGui();
+  }
+}
+
+/** Tự GỬI hộp thư lên kho chung ngay sau khi tester đã duyệt bài (lệnh `them --ghi` chỉ chạy sau khi duyệt trong chat). Gửi lỗi (mất mạng, chưa có quyền ghi) thì bài vẫn nằm trong hộp thư:
+ *  lần mở phiên sau (session-rules.js) tự gửi lại. Không tự gửi khi đang chạy kiểm thử (EP_KHO_BAI_HOC) hoặc đặt EP_KHONG_TU_GUI=1. */
+function tuGui() {
+  if (process.env.EP_KHONG_TU_GUI || process.env.EP_KHO_BAI_HOC) { console.log('Gửi lên kho chung: node tools/tester/dong-bo.js gui'); return; }
+  const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'dong-bo.js'), 'gui'], { encoding: 'utf8', timeout: 120000, windowsHide: true, env: process.env });
+  const nd = (String(r.stdout || '') + String(r.stderr || '')).trim();
+  if (nd) console.log(nd);
+  if (r.status !== 0) console.log('⚠ Chưa gửi được lên kho chung (bài vẫn an toàn trong hộp thư; lần mở phiên sau kit tự gửi lại).');
 }
 
 function lenhCu(args) {

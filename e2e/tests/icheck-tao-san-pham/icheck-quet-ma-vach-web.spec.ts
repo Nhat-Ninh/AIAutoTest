@@ -9,6 +9,7 @@ import { boSinhMa } from '../../lib/du-lieu';
 import { dongHopThoai } from '../../lib/ui';
 import { dsTuDuLieu, duLieu, json } from '../../lib/api';
 import { dsTheoTuKhoa, taoSPCoMaVach } from '../../lib/san-pham';
+import { textToast, theoDoiToast } from './_chung';
 
 const { ma, hauTo } = boSinhMa('AUTO_QMV_');
 const TRANG_SP = process.env.EP_TRANG_SP || '/easy-pos/product/product';
@@ -52,6 +53,7 @@ async function timTheoMaVach(api: any, bc: string) {
 
 test.describe('FE — Quét mã vạch thêm sản phẩm (Web, mục 4.2)', { tag: ['@ui', '@regression', '@icheck'] }, () => {
   test.beforeEach(async ({ page, dangNhapUI }) => {
+    await theoDoiToast(page);
     await dangNhapUI();
     await dongHopThoai(page);
     await page.goto(TRANG_SP);
@@ -234,7 +236,7 @@ test.describe('FE — Quét mã vạch thêm sản phẩm (Web, mục 4.2)', { t
     await moPopup(page);
     await quet(page, maVachMoi()); await doiSoDong(page, 1);
     await suaMaVachRoiXacNhan(page, 0, daDung);
-    const tt = (await toast(page).allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim());
+    const tt = await textToast(page);       // toast đã ghi lại từ đầu (theoDoiToast) — đọc tại một thời điểm cố định dễ hụt
     await page.screenshot({ path: test.info().outputPath('QMV-015-toast-khi-co-dong-loi-tu-BE.png'), fullPage: true });
     ghiChu('KẾT QUẢ QUAN SÁT', `Toast sau Xác nhận khi BE báo dòng lỗi: ${JSON.stringify(tt)}.`);
     expect(tt.some(s => /thành công/i.test(s)), `KHÔNG được báo "thành công" khi còn dòng không hợp lệ. Toast: ${JSON.stringify(tt)}`).toBe(false);

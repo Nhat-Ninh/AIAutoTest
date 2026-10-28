@@ -354,7 +354,7 @@ Cách chọn nhanh: **có tài liệu BA ⇒ chọn nghiệp vụ hoặc cả ha
 
 **Việc của BẠN: gần như không có — bạn KHÔNG phải dùng git.** Sau khi bạn duyệt, mọi thứ tự chạy:
 1. Bài vào **hộp thư của máy bạn** (`C:\Users\<bạn>\.easypos-tester\bai-hoc-cho-gui\`) và **dùng được ngay** trong các lần chạy sau trên máy bạn.
-2. Claude gửi lên kho chung bằng `dong-bo.js gui` — hook **hỏi bạn một lần** ("Gửi bài học lên kho chung?"): bấm **Cho phép** nếu bạn đã duyệt nháp.
+2. Ngay sau khi bài vào hộp thư, kit **tự gửi** lên kho chung (không hỏi thêm — bạn đã duyệt nháp ở bước 1). Gửi không được thì lần mở phiên Claude sau kit tự gửi lại.
 3. Máy chủ kiểm lại bài (cùng luật) rồi **tự gộp vào nhánh `main` của kit** trong khoảng 10 phút. Bài không đạt bị giữ lại cho người phụ trách xem, **không** vào main.
 4. Mọi tester (kể cả bạn) nhận bài ở lần **tự cập nhật** kế tiếp (Phần 12.4).
 

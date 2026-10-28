@@ -27,9 +27,8 @@ function suggestByBarcode(api: APIRequestContext, barcode: string) {
 }
 /** warehouseId mặc định: trước 23/10/2026 không truyền warehouseId làm BE lỗi hệ thống (417) — nay đã sửa (TC-BE-ICK-011 kiểm lại). Các ca "hợp lệ" khác
  * vẫn truyền warehouseId tường minh để độc lập với ca đó. */
-function quickCreate(api: APIRequestContext, comId: number | null, items: Record<string, unknown>[], warehouseId: number | null = null) {
-  return api.post('client/page/product/quick-create', { data: { comId, warehouseId, items } });
-}
+// Dùng bản có thử lại khi BE giữ khoá EXCEL_IMPORTING (28/10/2026, xem TC-BE-ICK-022) để các ca không làm nhau trượt.
+import { quickCreate } from './_chung';
 async function timTheoMaVach(api: APIRequestContext, barcode: string): Promise<any[]> {
   return (await dsTheoTuKhoa(api, barcode)).filter(x => String(x?.barcode ?? '') === barcode);
 }

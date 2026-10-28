@@ -46,6 +46,15 @@ try {
 let choGui = 0;
 try { choGui = fs.readdirSync(path.join(process.env.EP_STATE_DIR || path.join(os.homedir(), '.easypos-tester'), 'bai-hoc-cho-gui')).filter(f => f.endsWith('.md')).length; } catch (e) { /* chưa có hộp thư */ }
 
+// Bài đã duyệt mà lần trước chưa gửi được (mất mạng…): TỰ GỬI lại ở nền, không làm chậm việc mở phiên. Bài trong hộp thư chỉ có sau khi tester đã duyệt (bai-hoc.js them --ghi).
+let tuGui = false;
+if (choGui && !process.env.EP_SESSION_KHONG_DONG_BO && !process.env.EP_KHONG_TU_GUI) {
+  try {
+    require('child_process').spawn(process.execPath, [path.join(root, 'tools', 'tester', 'dong-bo.js'), 'gui', '--yen-lang'], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    tuGui = true;
+  } catch (e) { /* không chạy được thì bài vẫn nằm trong hộp thư */ }
+}
+
 // Số bài trong kho bài học chung (chỉ đếm dòng mục lục).
 let soBai = 0;
 try { soBai = require('../tools/lib/bai-hoc-lib').docKho(path.join(root, 'kien-thuc')).length; } catch (e) { /* chưa có kho */ }
@@ -61,10 +70,10 @@ const dong = [
   '- Jira `tools/jira/jira.js <MÃ>` (đọc), `jira-tao.js <nháp>` (xem trước; `--tao` sau khi tester duyệt) · Confluence `tools/confluence/confluence.js` · Bitbucket `tools/tester/bb.js` (DEV = nhánh `dev`) · Kho bài học `tools/tester/bai-hoc.js`.',
   '- Kho bài học chung: ' + soBai + ' bài (bẫy kỹ thuật, sự thật môi trường, lỗi đã biết, nghiệp vụ). TRA bằng `bai-hoc.js tim <từ khoá>`, đừng đọc cả `kien-thuc/`.',
   '- Báo cáo: `$EP_KIT/bao-cao/<ngày>_<chức năng>/` theo mẫu `mau-bao-cao/`.',
-  '- Kit TỰ ĐỒNG BỘ với nhánh main (tester không dùng git): mọi lệnh chạy test đều qua cổng "kit phải mới"; bài học đã duyệt gửi bằng `node "$EP_KIT/tools/tester/dong-bo.js" gui` (hook hỏi xác nhận). Đừng chạy git commit / push / pull.',
+  '- Kit TỰ ĐỒNG BỘ với nhánh main (tester không dùng git): mọi lệnh chạy test đều qua cổng "kit phải mới"; bài học đã duyệt TỰ lên kho chung (không cần chạy lệnh). Đừng chạy git commit / push / pull.',
   codeInsight ? '- ' + codeInsight : '',
   dongBo ? '- Đồng bộ kit lúc mở phiên: ' + dongBo : '',
-  choGui ? '- ⚠ Có ' + choGui + ' bài học đã duyệt đang chờ gửi lên kho chung: hỏi tester rồi chạy `node "$EP_KIT/tools/tester/dong-bo.js" gui`.' : '',
+  choGui ? '- Có ' + choGui + ' bài học đã duyệt chưa lên kho chung: kit ' + (tuGui ? 'đang TỰ GỬI ở nền (không cần hỏi, không cần chạy lệnh)' : 'sẽ tự gửi lần sau') + '. Không chạy `dong-bo.js gui` bằng tay.' : '',
   '',
 ];
 const ctx = rules + '\n' + dong.join('\n');

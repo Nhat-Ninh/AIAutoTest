@@ -85,12 +85,14 @@ test.describe('FE — modal Thêm sản phẩm (gợi ý iCheck)', { tag: ['@ui'
     await moModalThemSanPham(page);
     await oMaVach(page).fill(MA_VACH_CO_GOI_Y);
     await oMaVach(page).press('Enter');
-    await page.waitForTimeout(1500);
+    // iCheck có thể trả chậm (BE đo ~2,5 giây): đợi có thăm dò tới 12 giây thay vì chờ cố định (28/10/2026: chờ 1,5 giây là hụt).
+    await expect.poll(async () => (await oTen(page).inputValue()).length, { timeout: 12000 }).toBeGreaterThan(0).catch(() => undefined);
     await page.screenshot({ path: test.info().outputPath('ICK-003-sau-enter-ma-vach.png'), fullPage: true });
     const coDropdown = await dsGoiYTen(page).first().isVisible().catch(() => false);
     const ten = await oTen(page).inputValue();
     test.info().annotations.push({ type: 'KẾT QUẢ', description: `mã vạch ${MA_VACH_CO_GOI_Y} → ô Tên="${ten}", dropdown hiện=${coDropdown}` });
     expect(coDropdown, 'theo code: KHÔNG hiện dropdown ở ô Mã vạch (khác tài liệu)').toBe(false);
+    expect(ten.length, 'tài liệu 2.2 bước 3–4: mã vạch tìm thấy trong kho iCheck ⇒ điền Tên/giá/ảnh vào form').toBeGreaterThan(0);
   });
 
   test('[TC-FE-ICK-004] Mã vạch đã tồn tại trong cửa hàng: cảnh báo, không điền dữ liệu', async ({ page, api, phien }) => {
