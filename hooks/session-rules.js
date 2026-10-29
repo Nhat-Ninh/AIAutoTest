@@ -38,7 +38,7 @@ let codeInsight = '';
 try {
   const ci = require('../tools/tester/code-insight-cai');
   const bat = ci.cauHinh().bat; const viec = ci.apDung({});
-  if (bat) codeInsight = 'Đọc mã nguồn: dùng tool MCP `code-insight` (phan_tich_jira · giai_thich_luong · liet_ke_api · bang_db_lien_quan) — trả BẢN TÓM TẮT, không có mã nguyên văn; KHÔNG dùng bb.js / git với Bitbucket. Ghi "bản mã" (repo@commit) trong kết quả vào báo cáo.' + (viec.length ? ' (Vừa cập nhật cấu hình MCP: nếu tool chưa hiện, mở phiên Claude MỚI.)' : '');
+  if (bat) codeInsight = 'Đọc mã nguồn: dùng tool MCP `code-insight` (phan_tich_jira · giai_thich_luong · suy_ra_nghiep_vu · liet_ke_api · bang_db_lien_quan; KHÔNG có tài liệu nghiệp vụ thì dùng suy_ra_nghiep_vu để suy quy tắc từ code) — trả BẢN TÓM TẮT, không có mã nguyên văn; KHÔNG dùng bb.js / git với Bitbucket. Ghi "bản mã" (repo@commit) trong kết quả vào báo cáo.' + (viec.length ? ' (Vừa cập nhật cấu hình MCP: nếu tool chưa hiện, mở phiên Claude MỚI.)' : '');
   else if (viec.some(x => /^gỡ/.test(x))) codeInsight = 'Cổng đọc mã Code-Insight đã TẮT: kit vừa gỡ cấu hình MCP; đọc mã bằng bb.js như trước.';
 } catch (e) { /* cổng chỉ là thêm; lỗi thì bỏ qua */ }
 

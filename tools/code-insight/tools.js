@@ -66,6 +66,32 @@ const DS = {
     nhiemVu: (n) => 'Trả lời câu hỏi sau bằng cách đọc mã nguồn' + (n.repo ? ' của repo ' + n.repo : '') + ' và mô tả luồng xử lý theo từng bước.' + (n.repo ? '' : ' Không chỉ định repo: trước hết chọn TỐI ĐA 3 repo liên quan nhất theo tên thư mục (liệt kê thư mục gốc), chỉ đọc các repo đó, KHÔNG quét tất cả các repo.'),
     khoaCache: (n) => n.repo + '|' + n.cau_hoi.toLowerCase(),
   },
+  suy_ra_nghiep_vu: {
+    moTa: 'SUY RA nghiệp vụ và logic của một chức năng TỪ MÃ NGUỒN (dùng khi KHÔNG có tài liệu nghiệp vụ) để sinh testcase chặt chẽ: tác nhân / quyền, luồng, quy tắc có điều kiện + kết quả, ràng buộc từng trường (bắt buộc, kiểu, giới hạn), nhánh lỗi, chuyển trạng thái, tác dụng phụ (bảng / sự kiện), giá trị biên, điểm nghi vấn. Mọi điều trả về là SUY LUẬN TỪ CODE, chưa phải yêu cầu của BA. Trả bản tóm tắt đã lọc, KHÔNG có mã nguồn.',
+    inputSchema: { type: 'object', properties: { chuc_nang: { type: 'string', description: 'Tên chức năng bằng lời, vd "tạo sản phẩm từ iCheck"' }, repo: { type: 'string', description: 'Tên repo — NÊN chỉ định (vd easyposbackend); chức năng trải nhiều repo thì gọi lần lượt từng repo' } }, required: ['chuc_nang'], additionalProperties: false },
+    kiemDauVao(a, cfg) { return { chuc_nang: chuanHoaChuoi(a && a.chuc_nang, 'chuc_nang', 3, 200), repo: chuanHoaRepo(a && a.repo, cfg) }; },
+    // Báo cáo dài hơn các tool khác (nhiều quy tắc / ràng buộc / nhánh lỗi): nới giới hạn tổng và số đoạn che CHỈ cho tool này; các lớp lọc còn lại giữ nguyên.
+    locCauHinh: { tongToiDa: 28000, soCheToiDa: 16 },
+    luocDo: Obj({
+      tom_tat: Str(500),
+      tac_nhan: TUY(Arr(Str(120), 8)),
+      luong_chinh: Arr(Obj({ mo_ta: Str(300), tham_chieu: ThamChieu() }), 25),
+      quy_tac: Arr(Obj({ ma: Str(20, { ten: true }), mo_ta: Str(300), dieu_kien: TUY(Str(250)), ket_qua: TUY(Str(250)), tham_chieu: TUY(ThamChieu()) }), 60),
+      rang_buoc_truong: TUY(Arr(Obj({ truong: Str(80, { ten: true }), kieu: Str(40), bat_buoc: Enum('co', 'khong', 'co-dieu-kien'), gioi_han: TUY(Str(160)), tham_chieu: TUY(ThamChieu()) }), 60)),
+      nhanh_loi: TUY(Arr(Obj({ tinh_huong: Str(220), phan_hoi: Str(220), ma_loi: TUY(Str(80, { ten: true })), tham_chieu: TUY(ThamChieu()) }), 50)),
+      chuyen_trang_thai: TUY(Arr(Obj({ doi_tuong: Str(80), tu: Str(60), den: Str(60), dieu_kien: TUY(Str(200)), tham_chieu: TUY(ThamChieu()) }), 30)),
+      phan_quyen: TUY(Arr(Str(220), 15)),
+      tac_dung_phu: TUY(Arr(Obj({ mo_ta: Str(250), bang: TUY(Str(80, { ten: true })), tham_chieu: TUY(ThamChieu()) }), 30)),
+      diem_bien: TUY(Arr(Str(250), 40)),
+      diem_nghi_van: TUY(Arr(Obj({ mo_ta: Str(300), tham_chieu: ThamChieu() }), 25)),
+      cau_hoi_mo: TUY(Arr(Str(250), 15)),
+      ghi_chu: TUY(Str(400)),
+    }),
+    nhiemVu: (n) => 'Mục tiêu: SUY RA nghiệp vụ và logic của chức năng "' + n.chuc_nang + '"' + (n.repo ? ' trong repo ' + n.repo : '') + ' từ mã nguồn, ở mức đủ chi tiết để một kiểm thử viên sinh testcase CHẶT CHẼ mà không cần đọc mã. ' +
+      'Đọc theo luồng (giao diện → controller → service → repository / truy vấn → thực thể) và liệt kê: (1) tác nhân và quyền cần có; (2) luồng chính từng bước; (3) MỌI nhánh điều kiện ở dạng "quy tắc": điều kiện → kết quả (mỗi nhánh if / else / switch / early-return có ý nghĩa nghiệp vụ là một quy tắc, đánh mã QT-01, QT-02…); (4) ràng buộc từng trường vào (kiểu, bắt buộc hay bắt buộc có điều kiện, độ dài / giá trị tối thiểu - tối đa, định dạng, duy nhất, giá trị mặc định, cách xử lý rỗng / null / khoảng trắng) — NÊU CẢ chỗ giao diện và phía máy chủ kiểm khác nhau; (5) mọi nhánh lỗi: tình huống gây lỗi và phản hồi (mã HTTP, mã lỗi, ý của thông báo — diễn đạt bằng LỜI CỦA BẠN, không chép nguyên văn thông báo); (6) chuyển trạng thái hợp lệ và các chuyển KHÔNG được phép; (7) tác dụng phụ: bảng nào được ghi / sửa / xoá mềm, sự kiện hay thông điệp gửi đi, gọi dịch vụ khác, giao dịch (transaction) bao những gì; (8) giá trị biên cụ thể suy ra từ code (giới hạn độ dài, số lượng tối đa, làm tròn, ngày, đơn vị tính, tách công ty bằng com_id); (9) ĐIỂM NGHI VẤN giúp tìm lỗi mà người thường khó nghĩ tới: thiếu kiểm tra, kiểm tra không đối xứng giữa giao diện và máy chủ, lỗi làm tròn / tràn số, xử lý null, thiếu lọc theo công ty hoặc xoá mềm, không idempotent (bấm hai lần, gửi lại), điều kiện tranh chấp giữa hai yêu cầu đồng thời, nuốt lỗi âm thầm, lỗi giữa chừng để lại dữ liệu dở, mã trạng thái / thông báo không nhất quán. ' +
+      'Mọi mục có thể truy vết thì ghi tham_chieu (tệp:dòng). Điều không thấy trong mã thì KHÔNG bịa: ghi vào cau_hoi_mo để hỏi BA.' + (n.repo ? '' : ' Không chỉ định repo: trước hết chọn TỐI ĐA 3 repo liên quan nhất theo tên thư mục (liệt kê thư mục gốc), chỉ đọc các repo đó, KHÔNG quét tất cả các repo.'),
+    khoaCache: (n) => n.repo + '|' + n.chuc_nang.toLowerCase(),
+  },
   liet_ke_api: {
     moTa: 'Liệt kê API (method, đường dẫn, tham số, mã lỗi, quyền) liên quan một chức năng.',
     inputSchema: { type: 'object', properties: { chuc_nang: { type: 'string', description: 'Tên chức năng, vd "huỷ hoá đơn"' }, repo: { type: 'string' } }, required: ['chuc_nang'], additionalProperties: false },

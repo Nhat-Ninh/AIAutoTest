@@ -203,7 +203,7 @@ function decideShell(cmd, cwd) {
   const prodHost = prodHostIn(cmd, cfg);
   if (prodHost) return deny('Lệnh gọi mạng tới máy PROD (' + prodHost + '). Chỉ test trên TEST / UAT.');
   if (BITBUCKET_HOST_RE.test(cmd) && (HTTP_WORD_RE.test(cmd) || GIT_DOC_TU_XA_RE.test(cmd)) && codeInsightBat()) {
-    return deny('Cổng đọc mã Code-Insight đang BẬT: không gọi thẳng máy chủ Bitbucket (git-sds) bằng curl / git / script. Đọc mã bằng tool MCP code-insight (phan_tich_jira, giai_thich_luong, liet_ke_api, bang_db_lien_quan).');
+    return deny('Cổng đọc mã Code-Insight đang BẬT: không gọi thẳng máy chủ Bitbucket (git-sds) bằng curl / git / script. Đọc mã bằng tool MCP code-insight (phan_tich_jira, giai_thich_luong, suy_ra_nghiep_vu, liet_ke_api, bang_db_lien_quan).');
   }
   if (TEAM_TOOL_HOST_RE.test(cmd) && HTTP_WORD_RE.test(cmd) && WRITE_HTTP_RE.test(cmd)) {
     return ask('Lệnh GHI (POST / PUT / DELETE) lên Jira / Bitbucket / Confluence — người cả nhóm nhìn thấy. Soạn nháp, người dùng duyệt trước khi tạo / sửa.');

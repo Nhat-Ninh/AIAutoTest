@@ -103,7 +103,7 @@ node tools\tester\code-insight-cai.js
 node tools\tester\code-insight-cai.js kiem
 claude
 ```
-`kiem` phải báo `[OK] Cổng Code-Insight nối được (4 tool)`. Trong Claude: duyệt hộp thoại cho phép máy chủ MCP `code-insight`, gõ `/mcp` thấy `code-insight` đã nối.
+`kiem` phải báo `[OK] Cổng Code-Insight nối được (5 tool)`. Trong Claude: duyệt hộp thoại cho phép máy chủ MCP `code-insight`, gõ `/mcp` thấy `code-insight` đã nối.
 
 ### A7. Nghiệm thu (ghi kết quả từng dòng)
 Hỏi Claude (trong phiên vừa mở):

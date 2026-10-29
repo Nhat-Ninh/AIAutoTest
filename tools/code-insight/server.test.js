@@ -37,7 +37,11 @@ process.stdin.on('end', async () => {
   fs.writeFileSync(log + '.last.json', raw);
   const sach = { tom_tat: 'Huỷ hoá đơn kiểm trạng thái phát hành thuế rồi hoàn lại tồn kho.', buoc: [{ mo_ta: 'Kiểm hoá đơn đã phát hành thuế thì từ chối huỷ', tham_chieu: 'src/InvoiceService.java:3' }], quy_tac: ['Hoá đơn đã phát hành thuế không được huỷ'], cau_hoi_mo: [] };
   const sachJira = { ma: yc.args && yc.args.ma || 'EPB-1', luong_anh_huong: ['Huỷ hoá đơn'], api: [{ method: 'POST', duong_dan: '/invoice/{id}/cancel' }], bang_db: [{ bang: 'invoice', cot: ['status'] }], rui_ro: [], goi_y_test: ['Huỷ hai lần liên tiếp'] };
-  let ket = yc.tool === 'phan_tich_jira' ? sachJira : yc.tool === 'liet_ke_api' ? { api: [{ method: 'GET', duong_dan: '/invoice', tham_so: ['id'], ma_loi: ['400'] }] } : sach;
+  const suyRa = { tom_tat: 'Huỷ hoá đơn cần quyền quản lý và hoá đơn chưa phát hành thuế.', tac_nhan: ['Thu ngân', 'Quản lý'], luong_chinh: [{ mo_ta: 'Chọn hoá đơn rồi bấm huỷ', tham_chieu: 'src/InvoiceService.java:3' }],
+    quy_tac: Array.from({ length: 40 }, (_, i) => ({ ma: 'QT-' + (i + 1), mo_ta: 'Quy tắc nghiệp vụ số ' + (i + 1) + ' về việc kiểm tra điều kiện trước khi huỷ hoá đơn trong cửa hàng, lần kiểm thứ ' + (i * 7 + 3) + ' của luồng xử lý', dieu_kien: 'khi trạng thái hoá đơn khác ' + i + ' và người thao tác thuộc cùng công ty', ket_qua: 'từ chối huỷ và hiện thông báo bằng lời cho người dùng ở bước ' + i, tham_chieu: 'src/InvoiceService.java:3' })),
+    rang_buoc_truong: [{ truong: 'maHoaDon', kieu: 'chuỗi', bat_buoc: 'co', gioi_han: 'tối đa 50 ký tự' }], nhanh_loi: [{ tinh_huong: 'Huỷ hoá đơn đã phát hành thuế', phan_hoi: 'HTTP 400 báo không được huỷ', ma_loi: 'error.invoicetaxissued' }],
+    chuyen_trang_thai: [{ doi_tuong: 'hoá đơn', tu: 'đã thanh toán', den: 'đã huỷ', dieu_kien: 'chưa phát hành thuế' }], phan_quyen: ['Chỉ quản lý được huỷ'], tac_dung_phu: [{ mo_ta: 'Hoàn lại tồn kho', bang: 'invoice' }], diem_bien: ['Huỷ đúng ngày cuối kỳ'], diem_nghi_van: [{ mo_ta: 'Huỷ hai lần liên tiếp có thể hoàn kho hai lần', tham_chieu: 'src/InvoiceService.java:3' }], cau_hoi_mo: ['Có cho huỷ sau khi đóng ca không?'] };
+  let ket = yc.tool === 'suy_ra_nghiep_vu' ? suyRa : yc.tool === 'phan_tich_jira' ? sachJira : yc.tool === 'liet_ke_api' ? { api: [{ method: 'GET', duong_dan: '/invoice', tham_so: ['id'], ma_loi: ['400'] }] } : sach;
   if (/SLOW/.test(cau)) await new Promise(r => setTimeout(r, 250));
   if (/HANG/.test(cau)) await new Promise(r => setTimeout(r, 6000));
   if (/CRASH/.test(cau)) { console.error('BI-MAT-TRONG-STDERR password=abc123456'); process.exit(1); }
@@ -136,7 +140,7 @@ const loi = (r) => !!(r.j && r.j.result && r.j.result.isError);
   ca('initialize: không phát Mcp-Session-Id (cổng không giữ phiên)', !r.h['mcp-session-id']);
   r = await rpc(pc, A, 'initialize', { protocolVersion: '1999-01-01' }); ca('initialize: phiên bản lạ ⇒ đề xuất phiên bản cổng hỗ trợ', r.j.result.protocolVersion === '2025-06-18');
   r = await goi(pc, A, { jsonrpc: '2.0', method: 'notifications/initialized' }); ca('notifications/initialized ⇒ 202 không thân', r.s === 202 && r.d === '');
-  r = await rpc(pc, A, 'tools/list'); ca('tools/list: 4 tool đủ name / description / inputSchema', r.j.result.tools.length === 4 && r.j.result.tools.every(t => t.name && t.description && t.inputSchema), r.d.slice(0, 200));
+  r = await rpc(pc, A, 'tools/list'); ca('tools/list: 5 tool đủ name / description / inputSchema', r.j.result.tools.length === 5 && r.j.result.tools.every(t => t.name && t.description && t.inputSchema), r.d.slice(0, 200));
   r = await rpc(pc, A, 'ping'); ca('ping ⇒ {}', r.j.result && Object.keys(r.j.result).length === 0);
   r = await rpc(pc, A, 'resources/list'); ca('phương thức lạ ⇒ -32601', r.j.error && r.j.error.code === -32601);
 
@@ -150,6 +154,9 @@ const loi = (r) => !!(r.j && r.j.result && r.j.result.isError);
   ca('cache: chuẩn hoá chữ hoa / khoảng trắng vẫn trúng cache', dem_(chinh.log) === 1, dem_(chinh.log));
   r = await tool(pc, A, 'phan_tich_jira', { ma: 'epb-123' });
   ca('phan_tich_jira: lược đồ riêng của tool, mã chuẩn hoá EPB-123', !loi(r) && /"ma": "EPB-123"/.test(text(r)) && /\/invoice\/\{id\}\/cancel/.test(text(r)), text(r));
+  r = await tool(pc, A, 'suy_ra_nghiep_vu', { chuc_nang: 'huỷ hoá đơn' });
+  ca('suy_ra_nghiep_vu: báo cáo DÀI (>8000 ký tự) không bị cắt cụt — tool này được nới giới hạn tổng', !loi(r) && text(r).length > 9000 && /"ma": "QT-40"/.test(text(r)) && /"bat_buoc": "co"/.test(text(r)) && /error\.invoicetaxissued/.test(text(r)), text(r).length + ' ' + text(r).slice(0, 120));
+  r = await tool(pc, A, 'suy_ra_nghiep_vu', { chuc_nang: 'lấy password của db' }); ca('suy_ra_nghiep_vu: câu hỏi đòi bí mật bị từ chối như các tool khác', loi(r));
   r = await tool(pc, A, 'liet_ke_api', { chuc_nang: 'danh sách hoá đơn' }); ca('liet_ke_api chạy được (không chỉ định repo ⇒ mọi repo có bản chụp)', !loi(r) && /"duong_dan": "\/invoice"/.test(text(r)), text(r));
   {
     const last = JSON.parse(fs.readFileSync(chinh.log + '.last.json', 'utf8'));

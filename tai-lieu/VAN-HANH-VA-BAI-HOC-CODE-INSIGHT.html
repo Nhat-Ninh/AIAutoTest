@@ -71,7 +71,7 @@ ul.pl,ol.st{color:var(--muted);max-width:78ch;margin:0 0 1rem 1.2rem}ul.pl li,ol
 
 <h2 id="tom-tat"><span class="num">01</span>Tóm tắt và bài toán</h2>
 <p>Bộ kit auto test EasyPOS cần Claude đọc mã nguồn để phân tích chức năng. Trước đây công cụ <code>bb.js</code> gọi Bitbucket bằng <strong>tài khoản cá nhân của từng tester</strong>, tức mỗi người có quyền đọc cả kho. Tài khoản bị lộ hoặc người nghỉ việc đều kéo theo lộ toàn bộ mã; hook trên máy tester lại do chính tester kiểm soát nên không phải ranh giới bảo mật.</p>
-<p>Giải pháp là <strong>Code-Insight</strong>: đưa ranh giới bảo mật lên server. Claude trên máy tester chỉ gọi 4 tool cố định tới một cổng; cổng cho một "worker" (Claude chạy trong Docker, chỉ đọc) đọc <strong>bản chụp sạch</strong> của mã đang chạy trên DEV, rồi <strong>bộ lọc</strong> loại hết đoạn giống mã nguồn và bí mật trước khi trả bản tóm tắt. Tester không có token Bitbucket và không nhận mã nguyên văn.</p>
+<p>Giải pháp là <strong>Code-Insight</strong>: đưa ranh giới bảo mật lên server. Claude trên máy tester chỉ gọi 5 tool cố định tới một cổng; cổng cho một "worker" (Claude chạy trong Docker, chỉ đọc) đọc <strong>bản chụp sạch</strong> của mã đang chạy trên DEV, rồi <strong>bộ lọc</strong> loại hết đoạn giống mã nguồn và bí mật trước khi trả bản tóm tắt. Tester không có token Bitbucket và không nhận mã nguyên văn.</p>
 <div class="tw"><table>
 <thead><tr><th>Phương án đã cân nhắc</th><th>Kết luận</th></tr></thead>
 <tbody>
@@ -131,7 +131,7 @@ ul.pl,ol.st{color:var(--muted);max-width:78ch;margin:0 0 1rem 1.2rem}ul.pl li,ol
 <thead><tr><th>Thành phần</th><th>Tệp</th><th>Việc</th></tr></thead>
 <tbody>
 <tr><td>Cổng MCP</td><td><code>tools/code-insight/server.js</code></td><td>Nhận yêu cầu, xác thực bằng token Jira (nhớ 5 phút), kiểm quyền, hạn mức theo người, cache theo commit, hàng đợi worker, nhật ký; <code>--kiem</code>, <code>--thu-claude</code>, <code>--thu-worker</code> để chẩn đoán</td></tr>
-<tr><td>Danh mục tool</td><td><code>tools.js</code></td><td>4 tool (<code>phan_tich_jira</code>, <code>giai_thich_luong</code>, <code>liet_ke_api</code>, <code>bang_db_lien_quan</code>), kiểm đầu vào, lược đồ đầu ra, nhiệm vụ giao worker</td></tr>
+<tr><td>Danh mục tool</td><td><code>tools.js</code></td><td>5 tool (<code>phan_tich_jira</code>, <code>giai_thich_luong</code>, <code>suy_ra_nghiep_vu</code>, <code>liet_ke_api</code>, <code>bang_db_lien_quan</code>), kiểm đầu vào, lược đồ đầu ra, nhiệm vụ giao worker</td></tr>
 <tr><td>Bộ lọc</td><td><code>loc.js</code>, <code>chi-muc.js</code></td><td>Chuẩn hoá Unicode, che đoạn giống code / bí mật / IP nội bộ, so khớp n-gram (6 token) với chỉ mục băm của mã, kiểm tham chiếu tệp:dòng thật, đóng khi không chắc</td></tr>
 <tr><td>Worker</td><td><code>worker-claude.js</code>, <code>Dockerfile</code></td><td>Dựng lệnh <code>docker run … claude -p</code> với Read/Grep/Glob, dontAsk, gắn bản chụp <code>:ro</code>, lời nhắc hệ thống (không chép mã, ngân sách lượt)</td></tr>
 <tr><td>Bản chụp</td><td><code>xuat-ban-chup.sh</code>, <code>xuat-tat-ca.sh</code>, <code>anh-xa.txt</code></td><td><code>git archive</code>, xoá cấu hình / khoá / nhị phân, tạo <code>.insight/</code>, quét gitleaks, đổi <code>current</code> nguyên tử, giữ 5 bản</td></tr>

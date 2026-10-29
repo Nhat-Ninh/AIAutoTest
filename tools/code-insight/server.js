@@ -259,6 +259,8 @@ function taoMayChu(cfg) {
   const loiTool = (msg) => ({ isError: true, content: [{ type: 'text', text: msg }] });
   const vanBan = (t) => ({ content: [{ type: 'text', text: t }] });
   // Không đưa số đoạn bị che / lý do lọc cho tester (tránh thành "máy dò" xem câu nào trùng mã): chỉ ghi nhật ký quản trị.
+  /** Cấu hình bộ lọc của một tool: tool báo cáo dài (locCauHinh) chỉ được NỚI giới hạn so với cấu hình chung, không bao giờ siết ngược / bỏ lớp nào. */
+  const cfgLocCuaTool = (t) => { const c = Object.assign({}, cfg.loc); for (const k of Object.keys(t.locCauHinh || {})) c[k] = Math.max(Number(c[k]) || 0, t.locCauHinh[k]); return c; };
   const dinhDang = (v) => 'Bản mã đã đọc (đang chạy trên DEV): ' + v.banMa + '\n' + JSON.stringify(v.ket, null, 2);
 
   const chiMucTenTep = new Map();
@@ -351,7 +353,7 @@ function taoMayChu(cfg) {
           if (lanThu > 1) { const c2 = hanMuc.worker(nguoi); if (c2) return { kq: loiTool(c2), log: Object.assign(log, { ma: 'het-han-muc-worker', banMa }) }; }   // viết lại cũng là một lượt worker (tốn tiền)
           raw = await hangDoi(() => chayWorker(cfg, yeuCau(lanThu > 1 ? 'Kết quả lần trước bị bộ lọc từ chối. Viết lại BẰNG LỜI, không chép mã, không cấu hình, không bí mật.' : '')));
           hanMuc.luu();
-          kqLoc = loc(raw.ket, t.luocDo, { chiMuc, cfg: cfg.loc, kiemThamChieu });
+          kqLoc = loc(raw.ket, t.luocDo, { chiMuc, cfg: cfgLocCuaTool(t), kiemThamChieu });
           if (kqLoc.ok || lanThu >= 2 || kqLoc.ma === 'loi-loc') break;
         }
       } catch (e) {

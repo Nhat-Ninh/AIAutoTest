@@ -250,7 +250,7 @@ ca('đòi mật khẩu bị từ chối',thu('x', () => T.DS.liet_ke_api.kiemDau
 ca('repo ngoài danh sách bị từ chối', thu('x', () => T.DS.liet_ke_api.kiemDauVao({ chuc_nang: 'huỷ hoá đơn', repo: '../etc' }, cfg)) instanceof T.LoiDauVao);
 ca('repo trong danh sách được nhận', T.DS.liet_ke_api.kiemDauVao({ chuc_nang: 'huỷ hoá đơn', repo: 'EasyPosBackend' }, cfg).repo === 'easyposbackend');
 ca('câu hỏi quá dài bị từ chối', !!thu('x', () => T.DS.giai_thich_luong.kiemDauVao({ cau_hoi: 'a'.repeat(501) }, cfg)));
-ca('danh mục tool theo khuôn MCP (name / description / inputSchema)', T.danhSach().length === 4 && T.danhSach().every(t => t.name && t.description && t.inputSchema.type === 'object'));
+ca('danh mục tool theo khuôn MCP (name / description / inputSchema)', T.danhSach().length === 5 && T.danhSach().every(t => t.name && t.description && t.inputSchema.type === 'object'));
 
 console.log('\n' + dung + '/' + (dung + sai) + ' ca đúng');
 try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) { /* dọn tạm */ }

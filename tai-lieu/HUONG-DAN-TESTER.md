@@ -372,13 +372,21 @@ Gửi không được (mất mạng / chưa đăng nhập GitHub / chưa có quy
 
 ## Phần 9. Bảy bước và lúc bạn bấm Duyệt
 
+### 9.0 Trước Bước 0: Claude đọc nghiệp vụ và trình KẾ HOẠCH (chế độ Plan)
+
+Khi bạn gửi link Confluence / tệp nghiệp vụ / mã Jira / tên chức năng, Claude **chưa hỏi lựa chọn nào**. Claude đọc nghiệp vụ trước, rồi vào **chế độ Plan** và trình một **Kế hoạch** để bạn đọc, hiểu và hình dung logic: chức năng làm gì, ai dùng, **luồng nghiệp vụ**, các quy tắc, màn hình / API / bảng liên quan, **chỗ mơ hồ hoặc lệch giữa tài liệu và code**, rủi ro và hướng kiểm thử. Bạn **Duyệt / Sửa / Dừng**; duyệt rồi mới sang Bước 0 (hỏi phạm vi).
+
+- **Không có tài liệu nghiệp vụ?** Claude dùng cổng Code-Insight (tool `suy_ra_nghiep_vu`) để **suy nghiệp vụ và logic từ code**, và ghi nổi bật ở đầu Kế hoạch: *"chưa có yêu cầu của BA, mọi kỳ vọng là hành vi hiện tại của code"*. Testcase sinh ra có cột **Độ chắc = Suy từ code** để BA xác nhận sau.
+- Muốn bỏ qua bước này: nói rõ "bỏ qua plan".
+- Kế hoạch được lưu thành `00-ke-hoach.md` sau khi bạn duyệt.
+
 Hết **mỗi bước** Claude ghi báo cáo vào `bao-cao\<ngày>_<chức năng>\` rồi hiện hộp **Duyệt — đi tiếp / Sửa lại bước này / Dừng**. **Chưa Duyệt thì Claude không làm bước sau.**
 
 | Bước | Claude làm | Bạn làm / chọn | Báo cáo |
 |---|---|---|---|
 | **0 Phạm vi** | Hỏi 4 câu; nếu cần tài liệu, **tìm trang trên Confluence và đưa bạn chọn** | **Loại kiểm thử** (nghiệp vụ / kỹ thuật / cả hai) · UI/API/cả hai · nguồn nghiệp vụ (trang Confluence / Jira / Excel / chỉ code) · nhanh/đầy đủ | `00-pham-vi.md` |
 | **1 Phân tích** | Đọc code theo luồng; với loại có nghiệp vụ: **lấy trang Confluence, lập bảng quy tắc `BR-xx` có trích dẫn (trang › mục, phiên bản)**, đối chiếu tài liệu ↔ code, nêu **điểm đáng nghi** | Đọc kỹ: quy tắc có đúng ý BA không? có tài liệu cũ không? | `01-phan-tich.md` |
-| **2 Testcase** | Lập testcase `TC-FE-…`, `TC-BE-…` có cột **nguồn** (`BR-xx` / `Code` / `KT`) + **ma trận truy vết BR → TC** + dữ liệu CSDL mong đợi | Duyệt; xem BR nào chưa có testcase | `02-testcase.md` |
+| **2 Testcase** | Sinh testcase **chặt chẽ** theo kỹ thuật (phân hoạch, giá trị biên, bảng quyết định, trạng thái, đồng thời, phân quyền, tính toán…), có cả testcase **"ẩn"** ít người nghĩ tới; mỗi testcase đủ nguồn, dữ liệu cụ thể, kỳ vọng UI / API / CSDL, **độ chắc**; kèm truy vết, ma trận phủ, danh sách **cần BA chốt** | Duyệt; xem quy tắc nào chưa có testcase, đọc mục "cần BA chốt" | `02-testcase.md` |
 | **3 Kịch bản** | Viết kịch bản trong `e2e\tests\<chức năng>\` | Chọn **dev** và **giữ dữ liệu `AUTO_` để tra CSDL** (nên giữ) | `03-kich-ban.md` |
 | **4 Chạy** | Chạy thật, chụp ảnh; kịch bản sai thì sửa và chạy lại | Có thể hỏi "chạy tới đâu rồi" | `04-ket-qua-dev.md` |
 | **5 Kiểm dữ liệu** | Tra CSDL, mỗi dòng **Khớp / KHÔNG khớp** | Chọn **dọn dữ liệu `AUTO_`** hay giữ lại | `05-kiem-du-lieu-dev.md` |

@@ -26,7 +26,7 @@ báo cáo + lỗi theo mẫu Jira (`EPB-…`). Hook chặn nối CSDL trực ti�
 | `tools/ci/nhan-bai-hoc.js` + `.github/workflows/nhan-bai-hoc.yml` | **Máy chủ nhận bài học**: kiểm lại rồi tự gộp vào `main` bằng commit của bot (chỉ thêm tệp bài mới). Cần thiết lập GitHub một lần — `tai-lieu/HUONG-DAN-AP-DUNG-EASYPOS.md` mục D13 |
 | `tools/tester/uoc-token.js` | **Đo token THẬT** của một phiên Claude Code, chia theo từng lượt giao việc (token mới / đọc lại / ra, % cửa sổ ngữ cảnh) — để biết kiểm thử một chức năng tốn bao nhiêu và so trước / sau khi tối ưu |
 | `e2e/lib/` | Thư viện dùng chung cho kịch bản (đăng nhập, API, giao diện, sinh mã `AUTO_`, sản phẩm); test gắn nhãn `@smoke @api @ui @regression` |
-| `rules/` | `RULES.md` (luật luôn nạp, ngắn) · `QUY-TRINH.md` (chi tiết 7 bước, đọc một lần khi bắt đầu một chức năng) |
+| `rules/` | `RULES.md` (luật luôn nạp, ngắn) · `QUY-TRINH.md` (chi tiết 7 bước, đọc một lần khi bắt đầu một chức năng) · `KY-THUAT-TESTCASE.md` (kỹ thuật sinh testcase chặt chẽ, đọc một lần ở Bước 2) · Bước P: trình Plan trước Bước 0 |
 | `tools/jira/jira-tao.js` + `config/jira.json` | **Tạo ticket Bug** từ nháp đã duyệt (xem trước / `--tao`), đính kèm, chống trùng, in link; tester chỉ bấm Assign |
 | `tools/confluence/confluence.js` | **Đọc tài liệu nghiệp vụ** từ Confluence → markdown có phiên bản (`tim`, `trang`, `con`, `dinh-kem`, `lien-ket`); loại kiểm thử "kỹ thuật" không cần |
 | `tools/lib/atlassian.js` | Phần dùng chung: nạp token (PAT), gọi REST, quét bí mật |
