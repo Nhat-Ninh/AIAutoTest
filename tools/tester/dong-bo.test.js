@@ -10,9 +10,12 @@ const { spawnSync } = require('child_process');
 const DONG_BO = path.join(__dirname, 'dong-bo.js');
 const BAI_HOC = path.join(__dirname, 'bai-hoc.js');
 const NHAN = path.join(__dirname, '..', 'ci', 'nhan-bai-hoc.js');
-const CFG_THAT = path.join(__dirname, '..', '..', 'config', 'dong-bo.json');
+const CFG_REPO = path.join(__dirname, '..', '..', 'config', 'dong-bo.json');
 
 const goc = fs.mkdtempSync(path.join(os.tmpdir(), 'dong-bo-test-'));
+// Cấu hình thật trỏ Bitbucket + đẩy thẳng main; các ca dưới dựng remote tên "origin" và kênh inbox/ ⇒ ghi đè hai khoá đó (ca "main-truc-tiep" ở cuối tự dựng riêng).
+const CFG_THAT = path.join(goc, 'dong-bo.cfg.json');
+fs.writeFileSync(CFG_THAT, JSON.stringify({ ...JSON.parse(fs.readFileSync(CFG_REPO, 'utf8')), remote: 'origin', kenhGui: 'inbox' }, null, 1));
 const P = (...a) => path.join(goc, ...a);
 let dung = 0, sai = 0;
 const ca = (ten, ok, chiTiet) => { if (ok) { dung++; console.log('ĐÚNG ' + ten); } else { sai++; console.log('SAI  ' + ten + (chiTiet ? '\n     ' + String(chiTiet).split('\n').slice(0, 6).join('\n     ') : '')); } };
@@ -251,6 +254,20 @@ fs.unlinkSync(path.join(hopThu, 'BH-20261023-beef.md'));
 git(kit, 'remote', 'set-url', 'origin', P('khong-co.git'));
 r = chayDB(kit, st, 'gui');
 ca('gửi lúc mất mạng: mã 11, bài vẫn nằm trong hộp thư', r.status === 11 && fs.existsSync(path.join(hopThu, 'BH-20261023-cafe.md')), r.stdout + r.stderr);
+
+/* ---------- kenhGui = main-truc-tiep (kho không có máy chủ nhận bài, vd Bitbucket) ---------- */
+const kitTT = P('kit-truc-tiep'); git(goc, 'clone', '-q', remote, kitTT);
+ghi(path.join(kitTT, 'config', 'dong-bo.json'), JSON.stringify({ ...JSON.parse(doc(CFG_THAT)), kenhGui: 'main-truc-tiep' }));
+const stTT = P('trang-thai-truc-tiep'); fs.mkdirSync(stTT);
+const nhapTT = P('nhap-truc-tiep.md');
+ghi(nhapTT, doc(nhap).replace('Bẫy thử nghiệm của tester', 'Bẫy đẩy thẳng lên main không qua hộp thư').replace('dùng đúng API này', 'đẩy bài thẳng lên main khi kho không có máy chủ nhận bài'));
+spawnSync(process.execPath, [BAI_HOC, 'them', nhapTT, '--ghi'], { encoding: 'utf8', env: { ...MT, EP_STATE_DIR: stTT, EP_KHO_BAI_HOC: path.join(kitTT, 'kien-thuc'), EP_KHONG_TU_GUI: '1' } });
+const truocTT = git(remote, 'rev-parse', 'refs/heads/main');
+const nhanhTruoc = git(remote, 'for-each-ref', 'refs/heads/inbox/', '--format=%(refname)').split('\n').filter(Boolean).length;
+r = chayDB(kitTT, stTT, 'gui');
+const tepTT = git(remote, 'diff', '--name-status', truocTT, 'refs/heads/main').split('\n').filter(Boolean);
+ca('main-truc-tiep: bài lên THẲNG main (đúng 1 tệp kien-thuc/bai/ mới), không tạo nhánh inbox/ mới', r.status === 0 && tepTT.length === 1 && /^A\tkien-thuc\/bai\//.test(tepTT[0]) && git(remote, 'for-each-ref', 'refs/heads/inbox/', '--format=%(refname)').split('\n').filter(Boolean).length === nhanhTruoc, r.stdout + r.stderr + tepTT.join('|'));
+ca('main-truc-tiep: hộp thư chuyển bài sang đã-gửi', fs.readdirSync(path.join(stTT, 'bai-hoc-cho-gui')).length === 0);
 
 console.log(`\n${dung}/${dung + sai} ca đúng`);
 try { fs.rmSync(goc, { recursive: true, force: true }); } catch (e) { /* Windows có thể giữ tệp .git tạm */ }

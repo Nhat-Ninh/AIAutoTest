@@ -33,7 +33,7 @@ const F_CHAY = path.join(STATE, 'chay-test.lock');
 const HOP_THU = path.join(STATE, 'bai-hoc-cho-gui');
 const DA_GUI = path.join(STATE, 'bai-hoc-da-gui');
 
-const MAC_DINH = { nhanhChinh: 'main', remote: 'origin', tienToHopThu: 'inbox', tuoiToiDaPhut: 30, choPhepNgoaiTuyenNgay: 3, timeoutFetchGiay: 25, timeoutGuiGiay: 60,
+const MAC_DINH = { nhanhChinh: 'main', remote: 'origin', tienToHopThu: 'inbox', kenhGui: 'inbox', tuoiToiDaPhut: 30, choPhepNgoaiTuyenNgay: 3, timeoutFetchGiay: 25, timeoutGuiGiay: 60,
   toiDaCommitMoiLanKeo: 300, toiDaBaiMoiLanGui: 20, botEmail: 'easypos-kit-bot@users.noreply.github.com', botTen: 'easypos-kit-bot', duongNhayCam: [], duongBaiHoc: 'kien-thuc/bai/' };
 let CFG = MAC_DINH;
 try { CFG = Object.assign({}, MAC_DINH, JSON.parse(fs.readFileSync(path.join(KIT, 'config', 'dong-bo.json'), 'utf8'))); } catch (e) { /* dùng mặc định */ }
@@ -367,10 +367,24 @@ function gui() {
       const ten = layTenTester();
       r = T(['-c', 'user.name=' + ten, '-c', 'user.email=' + ten + '@easypos-kit.local', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', `Bài học từ tester ${ten}: ${them} bài`]);
       if (!r.ok) { loiIn('commit lỗi: ' + r.err); return 13; }
-      const nhanhGui = `${CFG.tienToHopThu}/${ten}-${gioHienTai()}`;
-      r = T(['push', '--quiet', 'origin', `gui:refs/heads/${nhanhGui}`], { timeoutMs: CFG.timeoutGuiGiay * 1000 });
-      if (!r.ok) return ngoaiTuyenGui(r);
-      console.log(`✔ Đã gửi ${them} bài lên ${nhanhGui}. Máy chủ sẽ kiểm lại và tự gộp vào ${CFG.nhanhChinh} (thường trong ~10 phút); lần cập nhật sau bài sẽ về tới mọi máy.`);
+      if (CFG.kenhGui === 'main-truc-tiep') {
+        // Không có máy chủ nhận bài (vd Bitbucket): đẩy THẲNG lên main. Bài chỉ thêm tệp MỚI nên khi main đã có commit khác thì fetch lại + rebase rồi đẩy lại (tối đa 3 lần).
+        for (let lan = 1; ; lan++) {
+          r = T(['push', '--quiet', 'origin', `gui:refs/heads/${CFG.nhanhChinh}`], { timeoutMs: CFG.timeoutGuiGiay * 1000 });
+          if (r.ok) break;
+          if (lan >= 3 || !/rejected|non-fast-forward|fetch first/i.test(r.err)) return ngoaiTuyenGui(r);
+          const f2 = T(['fetch', '--quiet', '--depth', '1', 'origin', `refs/heads/${CFG.nhanhChinh}`], { timeoutMs: CFG.timeoutGuiGiay * 1000 });
+          if (!f2.ok) return ngoaiTuyenGui(f2);
+          const rb = T(['-c', 'user.name=' + ten, '-c', 'user.email=' + ten + '@easypos-kit.local', 'rebase', 'FETCH_HEAD']);
+          if (!rb.ok) { loiIn('Không rebase được bài học lên ' + CFG.nhanhChinh + ': ' + rb.err.split('\n')[0]); return 13; }
+        }
+        console.log(`✔ Đã đẩy ${them} bài học thẳng lên ${CFG.remote}/${CFG.nhanhChinh}; lần cập nhật sau bài sẽ về tới mọi máy.`);
+      } else {
+        const nhanhGui = `${CFG.tienToHopThu}/${ten}-${gioHienTai()}`;
+        r = T(['push', '--quiet', 'origin', `gui:refs/heads/${nhanhGui}`], { timeoutMs: CFG.timeoutGuiGiay * 1000 });
+        if (!r.ok) return ngoaiTuyenGui(r);
+        console.log(`✔ Đã gửi ${them} bài lên ${nhanhGui}. Máy chủ sẽ kiểm lại và tự gộp vào ${CFG.nhanhChinh} (thường trong ~10 phút); lần cập nhật sau bài sẽ về tới mọi máy.`);
+      }
     } else console.log('Các bài trong hộp thư đã có sẵn trên ' + CFG.nhanhChinh + ' — không cần gửi.');
     fs.mkdirSync(DA_GUI, { recursive: true });
     for (const b of hopLe) { try { fs.renameSync(b.p, path.join(DA_GUI, b.f)); } catch (e) { /* để lại, lần sau gửi lại cũng vô hại */ } }
@@ -380,7 +394,7 @@ function gui() {
 }
 function ngoaiTuyenGui(r) {
   const xacThuc = /Authentication failed|could not read Username|terminal prompts disabled|Permission denied|403|401|denied to/i.test(r.err);
-  loiIn((xacThuc ? 'KHÔNG GỬI ĐƯỢC: tài khoản GitHub trên máy này chưa đăng nhập hoặc chưa có quyền ghi nhánh inbox/. ' : 'KHÔNG GỬI ĐƯỢC (mạng / máy chủ). ') + 'Bài vẫn nằm trong hộp thư, lần sau sẽ gửi lại.\n  Lỗi git: ' + r.err.split('\n')[0]);
+  loiIn((xacThuc ? 'KHÔNG GỬI ĐƯỢC: tài khoản git trên máy này chưa đăng nhập hoặc chưa có quyền ghi ' + (CFG.kenhGui === 'main-truc-tiep' ? 'nhánh ' + CFG.nhanhChinh : 'nhánh inbox/') + '. ' : 'KHÔNG GỬI ĐƯỢC (mạng / máy chủ). ') + 'Bài vẫn nằm trong hộp thư, lần sau sẽ gửi lại.\n  Lỗi git: ' + r.err.split('\n')[0]);
   return 11;
 }
 

@@ -9,6 +9,7 @@
 # Kết quả: <gốc>/<repo>/<commit>/…  và liên kết <gốc>/<repo>/current → <commit> (đổi nguyên tử SAU KHI mọi bước kiểm đạt).
 # Mã thoát ≠ 0 (và KHÔNG đổi "current") khi: không phải kho git (3), bản chụp rỗng (4), quét bí mật thấy gì HOẶC không có gitleaks (5).
 # Biến: CI_GITLEAKS=tat chỉ để thử (bỏ quét bí mật); mặc định BẮT BUỘC có gitleaks.
+#       CI_CHE_BI_MAT=1 (quản trị bật): gitleaks báo ⇒ CHE giá trị ở đúng các dòng bị báo («đã che») rồi quét lại; chỉ phát hành khi quét lại sạch. Mặc định tắt.
 set -euo pipefail
 umask 027
 
@@ -63,7 +64,8 @@ find "$TAM" -type f \( -iname '.env' -o -iname '.env.*' -o -iname '*.env' -o -in
   -o -iname '*.pem' -o -iname '*.key' -o -iname '*.p12' -o -iname '*.pfx' -o -iname '*.jks' -o -iname '*.keystore' -o -iname '*.crt' -o -iname '*.cer' -o -iname '*.p8' -o -iname '*.ppk' \
   -o -iname 'id_rsa*' -o -iname 'id_ed25519*' -o -iname 'id_ecdsa*' -o -iname '*.kdbx' -o -iname 'secrets*.json' -o -iname 'secret*.yml' -o -iname 'credentials*.json' -o -iname 'service-account*.json' \
   -o -iname '.npmrc' -o -iname '.netrc' -o -iname '.htpasswd' -o -iname '.pgpass' -o -iname '.git-credentials' -o -iname '*.tfstate' -o -iname '*.tfvars' -o -iname 'settings.xml' \
-  -o -iname 'docker-compose*.yml' -o -iname 'docker-compose*.yaml' -o -iname 'Jenkinsfile*' \) -delete
+  -o -iname 'docker-compose*.yml' -o -iname 'docker-compose*.yaml' -o -iname 'Jenkinsfile*' \
+  -o -iname 'password*.json' -o -iname '.yo-rc.json' -o -iname 'jhipster-control-center*.yml' \) -delete
 # Nhị phân / tài liệu / ảnh (worker không đọc ra chữ; bớt dung lượng).
 find "$TAM" -type f \( -iname '*.jar' -o -iname '*.war' -o -iname '*.class' -o -iname '*.zip' -o -iname '*.gz' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.ico' -o -iname '*.woff*' -o -iname '*.ttf' -o -iname '*.xlsx' -o -iname '*.docx' -o -iname '*.pdf' \) -delete
 # Thư mục sinh ra / của công cụ — XOÁ KHỎI bản chụp để phạm vi bản chụp = phạm vi chỉ mục lọc (chỉ mục chỉ bỏ .git và node_modules).
@@ -90,7 +92,34 @@ SO_TEP="$(find "$TAM" -type f -not -path "$TAM/.insight/*" | wc -l | tr -d ' ')"
 # 5. Quét bí mật: BẮT BUỘC. Thấy gì, hoặc không có gitleaks, thì KHÔNG phát hành bản chụp này (đóng khi không chắc).
 if [ "${CI_GITLEAKS:-}" != "tat" ]; then
   command -v gitleaks >/dev/null 2>&1 || { echo "Không có gitleaks — KHÔNG phát hành bản chụp (cài gitleaks; CI_GITLEAKS=tat chỉ để thử)" >&2; exit 5; }
-  gitleaks detect --no-git --source "$TAM" --no-banner --redact >/dev/null 2>&1 || { echo "gitleaks thấy bí mật trong bản chụp $REPO@$SHA — KHÔNG phát hành (xem: gitleaks detect --no-git --source <thư mục>)" >&2; exit 5; }
+  BAO_CAO_GL="$DICH_REPO/.gitleaks-$SHA.$$.json"   # ngoài $TAM để không bị quét; --redact: báo cáo KHÔNG chứa giá trị bí mật, chỉ luật / tệp / dòng
+  quet_gl() { rm -f "$BAO_CAO_GL"; gitleaks detect --no-git --source "$TAM" --no-banner --redact -f json -r "$BAO_CAO_GL" >/dev/null 2>&1; }
+  DA_CHE=0; QUET_DAT=0
+  if quet_gl; then QUET_DAT=1; fi
+  # CI_CHE_BI_MAT=1 (quản trị bật, mặc định TẮT): mã nguồn có khoá / token viết cứng (hằng số, chuỗi trong code) mà quản trị đã biết và chấp nhận:
+  # CHE giá trị ngay trên các dòng gitleaks báo (chuỗi trong nháy ≥ 12 ký tự → «đã che») rồi QUÉT LẠI; chỉ phát hành khi quét lại sạch hoàn toàn.
+  # Bản chụp là bản sao đã biến đổi (không phải mã gốc); tên biến / cấu trúc code giữ nguyên nên không ảnh hưởng việc hiểu nghiệp vụ. Còn dòng nào che không được ⇒ vẫn chặn (mã 5).
+  if [ "$QUET_DAT" = 0 ] && ! command -v node >/dev/null 2>&1; then
+    echo "Không tìm thấy 'node' trong PATH (cron có PATH ngắn): không che được bí mật, cũng không in được vị trí gitleaks báo — thêm thư mục chứa node vào PATH (vd trong keo-bundle.env: export PATH=\"<thư-mục-node>:\$PATH\")" >&2
+  fi
+  if [ "$QUET_DAT" = 0 ] && [ "${CI_CHE_BI_MAT:-}" = "1" ] && [ -s "$BAO_CAO_GL" ] && command -v node >/dev/null 2>&1; then
+    DA_CHE="$(node -e 'const fs=require("fs"),p=require("path");const rp=process.argv[1],tam=process.argv[2];let r=[];try{r=JSON.parse(fs.readFileSync(rp,"utf8"))}catch(e){}const theo=new Map();for(const x of r){const g=String(x.File||"").replace(/\\/g,"/");const rel=g.replace(/^.*\.dang-xuat-[0-9a-f]{40}\.\d+\//,"");const a=Number(x.StartLine);if(!rel||rel===g||rel.split("/").includes("..")||!(a>=1))continue;const b=Math.min(Number(x.EndLine)||a,a+5);if(!theo.has(rel))theo.set(rel,new Set());for(let i=a;i<=b;i++)theo.get(rel).add(i)}let n=0;for(const [rel,ds] of theo){const f=p.join(tam,rel);let t;try{t=fs.readFileSync(f,"utf8")}catch(e){continue}const L=t.split("\n");let doi=false;for(const i of ds){const s=L[i-1];if(s===undefined)continue;let m=s.replace(/"((?:[^"\\]|\\.){12,})"/g,"\"«đã che»\"").replace(/\x27((?:[^\x27\\]|\\.){12,})\x27/g,"\x27«đã che»\x27");if(m===s)m=s.replace(/([:=]\s*)[^\s,;]{12,}(\s*[,;]?\s*)$/,"$1«đã che»$2");if(m!==s){L[i-1]=m;doi=true;n++}}if(doi)fs.writeFileSync(f,L.join("\n"))}console.log(n)' "$BAO_CAO_GL" "$TAM" 2>/dev/null)" || DA_CHE=0
+    [[ "$DA_CHE" =~ ^[0-9]+$ ]] || DA_CHE=0
+    echo "CI_CHE_BI_MAT=1: đã che $DA_CHE dòng chứa giá trị bí mật trong bản chụp $REPO@${SHA:0:12} — quét lại" >&2
+    if [ "$DA_CHE" -gt 0 ] && quet_gl; then QUET_DAT=1; fi
+  fi
+  if [ "$QUET_DAT" = 0 ]; then
+    echo "gitleaks thấy bí mật trong bản chụp $REPO@$SHA — KHÔNG phát hành (xem: gitleaks detect --no-git --source <thư mục>)" >&2
+    if [ -s "$BAO_CAO_GL" ] && command -v node >/dev/null 2>&1; then
+      echo "Vị trí gitleaks báo (luật · tệp:dòng; giá trị đã che):" >&2
+      node -e 'let r=[];try{r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))}catch(e){}const s=new Set();for(const x of r){const f=String(x.File||"").replace(/\\/g,"/").replace(/^.*\.dang-xuat-[0-9a-f]{40}\.\d+\//,"");s.add("  - "+x.RuleID+" · "+f+":"+x.StartLine)}const a=[...s];console.error(a.slice(0,30).join("\n")+(a.length>30?"\n  … và "+(a.length-30)+" vị trí nữa":""))' "$BAO_CAO_GL" >&2 || true
+    fi
+    rm -f "$BAO_CAO_GL"; exit 5
+  fi
+  rm -f "$BAO_CAO_GL"
+  if [ "$DA_CHE" -gt 0 ]; then   # ghi vào ban-chup.json để báo cáo / tester biết bản chụp này đã che bí mật
+    node -e 'const fs=require("fs"),f=process.argv[1];const j=JSON.parse(fs.readFileSync(f,"utf8"));j.daChe=Number(process.argv[2]);fs.writeFileSync(f,JSON.stringify(j)+"\n")' "$TAM/.insight/ban-chup.json" "$DA_CHE" 2>/dev/null || true
+  fi
 else
   echo "Cảnh báo: CI_GITLEAKS=tat — KHÔNG quét bí mật (chỉ dùng khi thử)." >&2
 fi
@@ -103,4 +132,4 @@ chuyen_current
 trap - EXIT
 don_ban_cu
 
-echo "OK: $REPO@${SHA:0:12} (nhánh $NHANH) — $SO_TEP tệp → $DICH"
+echo "OK: $REPO@${SHA:0:12} (nhánh $NHANH) — $SO_TEP tệp → $DICH$([ "${DA_CHE:-0}" -gt 0 ] && echo " (đã che $DA_CHE dòng bí mật)")"

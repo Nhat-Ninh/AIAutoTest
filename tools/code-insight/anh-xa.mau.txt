@@ -19,3 +19,10 @@ easypos-dev-invoice-vte        invoice-service-vte
 easypos-dev-pharma             easypos-pharma
 easypos-dev-tax-integration    easypos-tax-integration
 easypos-dev-transhub           easypos-transhub
+
+# Môi trường dev_bia / uat_bia (máy Windows 10.100.110.78, nhánh dev-bia / bia-prod-test): các workspace này nằm trên máy .78, KHÔNG có ở Jenkins Linux của cổng.
+# Trên máy .78: git bundle create <tên-repo>.bundle HEAD (từng workspace) → chép sang server cổng → bash xuat-tu-bundle.sh <thư mục bundle> <gốc bản chụp> dev-bia. Tên repo trong cổng có hậu tố -bia, vd:
+#   BE-bia-8888          easyposbackend-bia
+#   Bia-FE-8888          easypos-frontend-bia
+#   Bia-Material-8888    easypos-product-material-bia
+#   Bia-Report-8888      easypos-report-bia

@@ -1,7 +1,8 @@
 {
   "_ghiChu": "Cấu hình đồng bộ kit (tools/tester/dong-bo.js, tools/ci/nhan-bai-hoc.js). Chỉ người phụ trách sửa. Thêm / nới giá trị = nới cổng an toàn ⇒ hook hỏi.",
   "nhanhChinh": "main",
-  "remote": "origin",
+  "remote": "bitbucket",
+  "kenhGui": "main-truc-tiep",
   "tienToHopThu": "inbox",
   "tuoiToiDaPhut": 30,
   "choPhepNgoaiTuyenNgay": 3,

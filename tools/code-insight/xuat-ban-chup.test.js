@@ -66,6 +66,39 @@ if (!taoDuocLienKet && /ln:|symlink|Operation not permitted/i.test(r.stderr + r.
   ca('bản chụp bị từ chối KHÔNG để lại thư mục (không lọt vào cổng)', !fs.readdirSync(path.join(snap, 'easyposbackend')).some(x => x === chay('git rev-parse HEAD', ws).stdout.trim()));
 }
 
+// Che bí mật có điều kiện (CI_CHE_BI_MAT=1): không cần symlink để kiểm bản chụp (kiểm thư mục commit; đổi current cần symlink)
+{
+  const ws2 = path.join(tmp, 'ws2'); fs.mkdirSync(ws2);
+  const w2 = (f, t) => { fs.mkdirSync(path.dirname(path.join(ws2, f)), { recursive: true }); fs.writeFileSync(path.join(ws2, f), t); };
+  const BI_MAT = 'ABCDEFGHIJKLMNOP1234567890abcdef';
+  w2('src/Cfg.java', 'class Cfg {\n  static final String API_KEY = "' + BI_MAT + '";\n  static final String TEN = "ngan";\n}\n');
+  w2('src/Ok.java', 'class Ok { }\n');
+  w2('password.json', '{"a":1}\n'); w2('.yo-rc.json', '{"b":2}\n');
+  chay('git init -q . && git config user.email t@t.t && git config user.name t && git add -A && git commit -qm "EPB-5 cfg"', ws2);
+  const sha3 = chay('git rev-parse HEAD', ws2).stdout.trim();
+  const bin2 = path.join(tmp, 'bin2'); fs.mkdirSync(bin2);
+  fs.writeFileSync(path.join(bin2, 'gitleaks'), [
+    '#!/usr/bin/env bash',
+    'while [ $# -gt 0 ]; do [ "$1" = "-r" ] && R="$2"; [ "$1" = "--source" ] && S="$2"; shift; done',
+    'F="$(grep -rl "ABCDEFGHIJKLMNOP" "$S" --include=*.java | head -1)"',
+    'if [ -n "$F" ]; then L="$(grep -n "ABCDEFGHIJKLMNOP" "$F" | head -1 | cut -d: -f1)"; printf \'[{"RuleID":"generic-api-key","File":"%s","StartLine":%s,"EndLine":%s}]\' "$F" "$L" "$L" > "$R"; exit 1; fi',
+    "printf '[]' > \"$R\"; exit 0", ''].join('\n'));
+  fs.chmodSync(path.join(bin2, 'gitleaks'), 0o755);
+  const gu = process.platform === 'win32' ? chay(`cygpath -u "${bin2.replace(/\\/g, '/')}"`, tmp).stdout.trim() : bin2;
+  const snap2 = path.join(tmp, 'snap2').replace(/\\/g, '/');
+  const chayGl = (them) => spawnSync(bash, ['-c', `PATH="${gu}:$PATH" CI_GITLEAKS=bat ${them} bash "${sh}" cfgrepo "${snap2}" 3`], { cwd: ws2, env: Object.assign({}, env, { CI_GITLEAKS: 'bat' }), encoding: 'utf8' });
+  const rA = chayGl('');
+  ca('khoá viết cứng, KHÔNG bật che ⇒ mã 5 + báo đúng tệp:dòng, KHÔNG lộ giá trị', rA.status === 5 && /Cfg\.java:2/.test(rA.stderr) && !rA.stderr.includes(BI_MAT), rA.status + ' ' + rA.stderr);
+  ca('(không bật che) KHÔNG phát hành thư mục commit', !fs.existsSync(path.join(snap2, 'cfgrepo', sha3)));
+  const rB = chayGl('CI_CHE_BI_MAT=1');
+  ca('bật che ⇒ báo "đã che 1 dòng", quét lại sạch (không còn thông báo KHÔNG phát hành)', /đã che 1 dòng/.test(rB.stderr) && !/KHÔNG phát hành/.test(rB.stderr), rB.status + ' ' + rB.stderr);
+  const pb = path.join(snap2, 'cfgrepo', sha3);
+  const cfg2 = fs.existsSync(path.join(pb, 'src/Cfg.java')) ? fs.readFileSync(path.join(pb, 'src/Cfg.java'), 'utf8') : '';
+  ca('bản chụp đã che: không còn giá trị bí mật, có «đã che», tên biến và chuỗi ngắn giữ nguyên', cfg2 && !cfg2.includes(BI_MAT) && cfg2.includes('API_KEY = "«đã che»"') && cfg2.includes('"ngan"'), cfg2);
+  ca('password.json / .yo-rc.json bị XOÁ khỏi bản chụp', fs.existsSync(pb) && !fs.existsSync(path.join(pb, 'password.json')) && !fs.existsSync(path.join(pb, '.yo-rc.json')));
+  ca('ban-chup.json ghi daChe = 1', fs.existsSync(pb) && JSON.parse(fs.readFileSync(path.join(pb, '.insight/ban-chup.json'), 'utf8')).daChe === 1);
+}
+
 // Các ca không cần symlink
 {
   const kg = path.join(tmp, 'khong-git'); fs.mkdirSync(kg);

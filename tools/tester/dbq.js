@@ -38,12 +38,14 @@ if (prod.isProdDatabase(db.database, pc)) die('TU CHOI: CSDL ' + db.database + '
 
 let tk = null;
 if (E('USER') && E('PASSWORD')) tk = { user: E('USER'), password: process.env['EP_' + ENVU + '_DB_PASSWORD'] };
-for (const f of [path.join(os.homedir(), '.easypos-tester', 'tai-khoan.json'), path.join(KIT, 'config', 'tai-khoan.json')]) {
+// Môi trường có moiTruong.<env>.taiKhoanTu (vd dev_bia mượn dev, cùng CSDL): thử khối của chính nó trước, rồi khối được mượn.
+const nguon = [env]; { const g = String((cfg.moiTruong[env] || {}).taiKhoanTu || ''); if (g && g !== env && cfg.moiTruong[g]) nguon.push(g); }
+for (const e of nguon) for (const f of [path.join(os.homedir(), '.easypos-tester', 'tai-khoan.json'), path.join(KIT, 'config', 'tai-khoan.json')]) {
   if (tk) break;
-  const t = docJson(f); const x = t && t[env] && t[env].db;
+  const t = docJson(f); const x = t && t[e] && t[e].db;
   if (x && x.user && x.password) tk = x;
 }
-if (!tk) die('Chua co tai khoan CSDL moi truong ' + env + ': dien ~/.easypos-tester/tai-khoan.json -> ' + env + '.db (user, password; tai khoan CHI DOC) - tu go, khong dan vao chat.');
+if (!tk) die('Chua co tai khoan CSDL moi truong ' + env + ': dien ~/.easypos-tester/tai-khoan.json -> ' + nguon[nguon.length - 1] + '.db (user, password; tai khoan CHI DOC) - tu go, khong dan vao chat.');
 // sa chỉ được nhận ở máy KHÔNG phải prod (đã chặn prod ở trên) — dev / UAT EasyPOS hiện chỉ có tài khoản sa của ứng dụng. Vẫn chỉ chạy câu SELECT (xem bên dưới).
 if (/^sa$/i.test(tk.user)) console.error('# CANH BAO: dang dung tai khoan sa tren ' + db.host + '/' + db.database + ' (may khong phai prod). Chi chay cau doc. Nen xin DBA tai khoan chi-doc.');
 if (prod.isProdLogin(tk.user, pc)) die('TU CHOI: ' + tk.user + ' la tai khoan cua PROD (prodDb.logins).');

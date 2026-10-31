@@ -64,7 +64,7 @@ const dong = [
   '## Đường dẫn và công cụ (máy này)',
   '- EP_KIT = `' + rootF + '` (thư mục bộ kit). Chạy công cụ không đối số để xem cách dùng.',
   '- Bản đồ hệ thống (service, route, màn hình, bảng CSDL, đăng nhập): `' + rootF + '/tai-lieu/EASYPOS-BAN-DO.md` — đọc khi cần, MỘT lần.',
-  '- Môi trường: `config/moi-truong.json` (`dev` mặc định; `uat` tuỳ chọn — HỎI tester ở Bước 6b, không tự chạy).',
+  '- Môi trường: `config/moi-truong.json` (`dev` mặc định; `dev_bia` = nhánh dev-bia trên máy Windows .78:8888; `uat` / `uat_bia` tuỳ chọn — HỎI tester ở Bước 6b, không tự chạy; dev ↔ dev_bia dùng chung CSDL: không chạy cùng lúc).',
   '- Kịch bản: `$EP_KIT/e2e` — `cd e2e && npx playwright test tests/<thư mục> --project=dev [--grep @smoke|@api|@ui|@regression]`. Thư viện dùng chung `e2e/lib/` (fixtures, api, ui, du-lieu, san-pham): DÙNG LẠI, đừng chép hàm vào kịch bản.',
   '- CSDL (chỉ SELECT): `node "$EP_KIT/tools/tester/dbq.js" <môi trường> <tệp.sql>` (viết SQL vào tệp ở một lệnh, chạy ở lệnh sau).',
   '- Jira `tools/jira/jira.js <MÃ>` (đọc), `jira-tao.js <nháp>` (xem trước; `--tao` sau khi tester duyệt) · Confluence `tools/confluence/confluence.js` · Bitbucket `tools/tester/bb.js` (DEV = nhánh `dev`) · Kho bài học `tools/tester/bai-hoc.js`.',

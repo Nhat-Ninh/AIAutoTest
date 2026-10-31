@@ -298,6 +298,21 @@ git ls-remote https://git-sds.softdreams.vn:7990/scm/epos/easypos-gateway-cloud.
 
 ## Phần 8. Giao việc cho Claude
 
+### 8.0 Chọn môi trường: `dev` hay `dev_bia`
+
+Có hai bộ môi trường, **chọn một cho mỗi lượt kiểm thử**:
+
+| Môi trường | Địa chỉ | Nhánh code | Máy | UAT đi kèm |
+|---|---|---|---|---|
+| `dev` (mặc định) | http://10.100.140.9:8082/ | `dev` | Linux | `uat` (https://uat.easypos.vn/) |
+| `dev_bia` | http://10.100.110.78:8888/ | `dev-bia` | Windows | `uat_bia` (http://10.100.110.78:8081/, nhánh `bia-prod-test`) |
+
+Bạn chỉ cần nói với Claude: **"Môi trường: dev_bia"** (hoặc "dev"). Không cần sửa địa chỉ nào, cũng **không cần điền thêm tài khoản**: `dev_bia` dùng chung tài khoản của `dev`, `uat_bia` dùng chung của `uat`. Chạy tay: `--project=dev_bia`, tra CSDL: `dbq.js dev_bia …`.
+
+**Hai điều bắt buộc nhớ:**
+1. `dev` và `dev_bia` **dùng chung CSDL** (UAT cũng vậy): **không chạy kịch bản trên hai môi trường cùng lúc** và không để người khác cùng test một công ty ở môi trường kia.
+2. Hai môi trường chạy **nhánh code khác nhau**: báo cáo luôn ghi đúng môi trường. Lỗi chỉ thấy ở một môi trường thì Claude ghi "nghi lỗi nền tảng / môi trường" và chạy lại smoke ở môi trường còn lại để so sánh.
+
 ### 8.1 Một tin nhắn nên có đủ 4 thứ
 1. **Môi trường:** `dev`.
 2. **Tài khoản:** "khoá dev trong tai-khoan.json" (Claude không hỏi mật khẩu).

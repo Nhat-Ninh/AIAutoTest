@@ -34,7 +34,9 @@
       "phuTro": {
         "canXacNhan": "Web DEV do người phụ trách chỉ định 22/10/2026: http://10.100.140.9:8082/ (FE cổng 8082 + /api/ cùng gốc; ping API 200). Trước đó dùng http://10.100.110.78/ (cũng cùng CSDL easyposbackoffice @ 10.100.110.78 — cần xác nhận CSDL của địa chỉ mới có đúng là easyposbackoffice không: so số liệu API với dbq). DEV có dev đang sửa code liên tục: lỗi chập chờn có thể do môi trường.",
         "mongo": "EasyPosAsync (10.100.110.78:27017) — dbq chưa hỗ trợ MongoDB"
-      }
+      },
+      "capUat": "uat",
+      "hauToRepo": ""
     },
     "uat": {
       "ten": "UAT EasyPOS (profile prodTest) — TÙY CHỌN, chỉ chạy khi tester muốn",
@@ -55,6 +57,55 @@
         "canXacNhan": "Địa chỉ UAT do người phụ trách xác nhận 22/10/2026: https://uat.easypos.vn/login (application profile prodTest). apiUrl = webUrl + 'api/' (suy theo cách FE gọi API cùng gốc) — kiểm bằng F12 → Network nếu đăng nhập API báo 404. uat.easypos.vn nằm dưới tên miền prod easypos.vn nên phải khai ở khongPhaiProd (đã khai).",
         "mongo": "easypos_async_83 (10.100.110.78:27017) — dbq chưa hỗ trợ MongoDB",
         "csdlKhac": "easyposbackofficenew (report, ecommerce) cùng máy 10.100.110.78"
+      }
+    },
+    "dev_bia": {
+      "ten": "DEV BIA — nhánh dev-bia, máy 10.100.110.78 cổng 8888 (Windows)",
+      "webUrl": "http://10.100.110.78:8888/",
+      "apiUrl": "http://10.100.110.78:8888/api/",
+      "headerThem": {},
+      "db": {
+        "host": "10.100.110.78",
+        "port": 1433,
+        "database": "easyposbackoffice"
+      },
+      "dangNhap": {
+        "api": {
+          "congTy": "9839"
+        },
+        "ui": {
+          "duongDan": "/login"
+        }
+      },
+      "taiKhoanTu": "dev",
+      "capUat": "uat_bia",
+      "nhanhCode": "dev-bia",
+      "hauToRepo": "-bia",
+      "phuTro": {
+        "canXacNhan": "Người phụ trách cung cấp 29/10/2026: web http://10.100.110.78:8888/ chạy nhánh dev-bia. /api/ cùng gốc (GET /api/ trả 401 = API có mặt). DÙNG CHUNG CSDL easyposbackoffice, kho async EasyPosAsync và bộ đệm cache (database 1) với môi trường `dev` (10.100.140.9:8082, nhánh dev) ⇒ KHÔNG chạy kịch bản trên hai môi trường cùng lúc; nhánh code khác nhau nên mỗi báo cáo phải ghi môi trường + commit.",
+        "nenTang": "Windows (Jenkins workspace C:\\ProgramData\\Jenkins\\.jenkins\\workspace: BE-bia-8888, Bia-FE-8888, Bia-Material-8888, Bia-Report-8888…). Khác Linux (môi trường dev): không phân biệt hoa-thường tên tệp, mã hoá ký tự / múi giờ / font mặc định khác — lỗi chỉ xảy ra ở một môi trường ⇒ nghi lỗi nền tảng, chạy lại smoke trên môi trường kia để so."
+      }
+    },
+    "uat_bia": {
+      "ten": "UAT BIA — nhánh bia-prod-test (profile prodTest), máy 10.100.110.78 cổng 8081 — TÙY CHỌN",
+      "webUrl": "http://10.100.110.78:8081/",
+      "apiUrl": "http://10.100.110.78:8081/api/",
+      "headerThem": {},
+      "db": {
+        "host": "10.100.110.78",
+        "port": 1433,
+        "database": "easyposuat"
+      },
+      "dangNhap": {
+        "ui": {
+          "duongDan": "/login"
+        }
+      },
+      "taiKhoanTu": "uat",
+      "nhanhCode": "bia-prod-test",
+      "hauToRepo": "-bia",
+      "phuTro": {
+        "canXacNhan": "Người phụ trách cung cấp 29/10/2026: web http://10.100.110.78:8081/ chạy nhánh bia-prod-test với profile prodTest. DÙNG CHUNG CSDL easyposuat, kho async easypos_async_83 và bộ đệm cache (database 2) với môi trường `uat` (uat.easypos.vn) ⇒ không chạy hai môi trường UAT cùng lúc."
       }
     }
   },
@@ -102,7 +153,9 @@
   "nhanhCode": {
     "dev": "dev",
     "uat": "",
-    "ghiChu": "Nhánh Bitbucket đang được deploy lên từng môi trường (người phụ trách xác nhận 22/10/2026: DEV = nhánh `dev` của mọi repo EPOS). UAT chưa xác định — để trống; bb.js tep/ls/commit không truyền nhánh sẽ đọc nhánh của DEV. Đổi nhánh khác bằng cách truyền tên nhánh vào lệnh, hoặc biến EP_BB_NHANH."
+    "ghiChu": "Nhánh Bitbucket đang được deploy lên từng môi trường (người phụ trách xác nhận 22/10/2026: DEV = nhánh `dev` của mọi repo EPOS). UAT chưa xác định — để trống; bb.js tep/ls/commit không truyền nhánh sẽ đọc nhánh của DEV. Đổi nhánh khác bằng cách truyền tên nhánh vào lệnh, hoặc biến EP_BB_NHANH. Môi trường dev_bia chạy nhánh dev-bia, uat_bia chạy nhánh bia-prod-test (người phụ trách xác nhận 29/10/2026). Repo đọc qua Code-Insight của hai môi trường này có hậu tố \"-bia\" (moiTruong.<env>.hauToRepo).",
+    "dev_bia": "dev-bia",
+    "uat_bia": "bia-prod-test"
   },
   "khongPhaiProd": [
     "testtranshub.easypos.vn",

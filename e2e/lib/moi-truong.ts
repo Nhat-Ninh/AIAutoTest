@@ -25,13 +25,22 @@ export function dsMoiTruong(): string[] {
 
 /** Tài khoản web / db: tệp riêng của tester (~/.easypos-tester/tai-khoan.json) thắng, rồi tới config/tai-khoan.json (nếu ai đó tạo cục bộ;
  *  tệp này không lên git). Thiếu ⇒ null. Môi trường PROD: chỉ nhận từ tệp riêng — không bao giờ có tài khoản prod trong bộ kit. */
+/** Các khoá được thử khi tìm tài khoản của `env`: chính nó, rồi môi trường nó MƯỢN (moiTruong.<env>.taiKhoanTu, vd dev_bia mượn dev vì cùng CSDL).
+ *  Chỉ mượn khi cả hai đều không phải prod. */
+export function nguonTaiKhoan(env: Env): Env[] {
+  const goc = String(cauHinh?.moiTruong?.[env]?.taiKhoanTu || '');
+  return goc && goc !== env && cauHinh?.moiTruong?.[goc] && !laMoiTruongProd(env) && !laMoiTruongProd(goc) ? [env, goc] : [env];
+}
+
 export function taiKhoan(env: Env, loai: 'web' | 'db'): { user: string; password: string } | null {
   const prod = laMoiTruongProd(env);
-  for (const [src, laRieng] of [[tkRieng, true], [tkChung, false]] as const) {
-    const t = src?.[env]?.[loai];
-    if (!(t?.user && t?.password)) continue;
-    if (prod && !laRieng) continue;
-    return t;
+  for (const e of nguonTaiKhoan(env)) {
+    for (const [src, laRieng] of [[tkRieng, true], [tkChung, false]] as const) {
+      const t = src?.[e]?.[loai];
+      if (!(t?.user && t?.password)) continue;
+      if (prod && !laRieng) continue;
+      return t;
+    }
   }
   return null;
 }
@@ -91,7 +100,7 @@ export const choGhiProd = (): boolean => choPhepProd() && process.env.EP_PROD_CH
 export function thieuTaiKhoan(env: Env): string {
   return laMoiTruongProd(env)
     ? `Chưa có tài khoản cho PROD ${env}. Bộ kit không mang tài khoản prod: người phụ trách cấp riêng, rồi ghi vào ~/.easypos-tester/tai-khoan.json → "${env}": { "web": { "user": "…", "password": "…" } }.`
-    : `Chưa có tài khoản web môi trường ${env}: mở ~/.easypos-tester/tai-khoan.json (mẫu: config/tai-khoan.example.json), điền "${env}" → "web" → user / password. KHÔNG dán mật khẩu vào chat.`;
+    : `Chưa có tài khoản web môi trường ${env}: mở ~/.easypos-tester/tai-khoan.json (mẫu: config/tai-khoan.example.json), điền "${nguonTaiKhoan(env).slice(-1)[0]}" → "web" → user / password${nguonTaiKhoan(env).length > 1 ? ` (môi trường ${env} dùng chung tài khoản với ${nguonTaiKhoan(env)[1]}, chỉ cần điền một lần)` : ''}. KHÔNG dán mật khẩu vào chat.`;
 }
 
 /** Môi trường là prod: khai "prod": true, hoặc địa chỉ web / API khớp prodChan. */
