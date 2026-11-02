@@ -15,7 +15,7 @@ const CFG_REPO = path.join(__dirname, '..', '..', 'config', 'dong-bo.json');
 const goc = fs.mkdtempSync(path.join(os.tmpdir(), 'dong-bo-test-'));
 // Cấu hình thật trỏ Bitbucket + đẩy thẳng main; các ca dưới dựng remote tên "origin" và kênh inbox/ ⇒ ghi đè hai khoá đó (ca "main-truc-tiep" ở cuối tự dựng riêng).
 const CFG_THAT = path.join(goc, 'dong-bo.cfg.json');
-fs.writeFileSync(CFG_THAT, JSON.stringify({ ...JSON.parse(fs.readFileSync(CFG_REPO, 'utf8')), remote: 'origin', kenhGui: 'inbox' }, null, 1));
+fs.writeFileSync(CFG_THAT, JSON.stringify({ ...JSON.parse(fs.readFileSync(CFG_REPO, 'utf8')), remote: 'origin', kenhGui: 'inbox', remoteUrl: '' }, null, 1));
 const P = (...a) => path.join(goc, ...a);
 let dung = 0, sai = 0;
 const ca = (ten, ok, chiTiet) => { if (ok) { dung++; console.log('ĐÚNG ' + ten); } else { sai++; console.log('SAI  ' + ten + (chiTiet ? '\n     ' + String(chiTiet).split('\n').slice(0, 6).join('\n     ') : '')); } };
@@ -268,6 +268,50 @@ r = chayDB(kitTT, stTT, 'gui');
 const tepTT = git(remote, 'diff', '--name-status', truocTT, 'refs/heads/main').split('\n').filter(Boolean);
 ca('main-truc-tiep: bài lên THẲNG main (đúng 1 tệp kien-thuc/bai/ mới), không tạo nhánh inbox/ mới', r.status === 0 && tepTT.length === 1 && /^A\tkien-thuc\/bai\//.test(tepTT[0]) && git(remote, 'for-each-ref', 'refs/heads/inbox/', '--format=%(refname)').split('\n').filter(Boolean).length === nhanhTruoc, r.stdout + r.stderr + tepTT.join('|'));
 ca('main-truc-tiep: hộp thư chuyển bài sang đã-gửi', fs.readdirSync(path.join(stTT, 'bai-hoc-cho-gui')).length === 0);
+
+/* ---------- remoteUrl: máy tester có thể chỉ có remote "origin" (cài từ GitHub) hoặc origin = Bitbucket; tên remote trong cấu hình có thể chưa có ---------- */
+{
+  const URL_BB = 'https://git-sds.example.invalid:7990/scm/aut/automation-testing-ai.git';   // địa chỉ không tồn tại: fetch thất bại nhanh, không ra mạng thật
+  const dungKit = (ten, cauHinh) => { const k = P(ten); git(goc, 'clone', '-q', remote, k); ghi(path.join(k, 'config', 'dong-bo.json'), JSON.stringify({ ...JSON.parse(doc(CFG_THAT)), remote: 'bitbucket', kenhGui: 'main-truc-tiep', remoteUrl: URL_BB, ...cauHinh })); const s = P('tt-' + ten); fs.mkdirSync(s); return { k, s }; };
+  const dsRemote = (k) => git(k, 'remote', '-v').split('\n').filter(l => /\(fetch\)/.test(l));
+
+  // (1) Lỗi thật đã gặp: kit cài từ GitHub (chỉ có origin), cấu hình đã đổi sang remote "bitbucket" ⇒ trước đây mã 13 "chưa có remote" mãi mãi.
+  let x = dungKit('kit-chi-origin', {});
+  ca('trước khi chạy: kit chỉ có origin (không có bitbucket)', dsRemote(x.k).length === 1 && !/bitbucket/.test(dsRemote(x.k)[0]));
+  r = chayDB(x.k, x.s, 'cap-nhat');
+  ca('remoteUrl: remote "bitbucket" được TỰ THÊM đúng địa chỉ (không còn kẹt mã 13)', gitOk(x.k, 'remote', 'get-url', 'bitbucket').stdout.trim() === URL_BB && /đã tự thêm/.test(r.stdout) && r.status !== 13, r.status + ' ' + r.stdout + r.stderr);
+  ca('remote origin cũ KHÔNG bị đụng', git(x.k, 'remote', 'get-url', 'origin') === remote);
+  r = chayDB(x.k, x.s, 'gui');
+  ca('gửi bài sau khi thêm remote: lỗi là "mạng / chưa đăng nhập" (mã 11 hoặc hộp thư trống), KHÔNG phải "chưa có remote"', !/chưa có remote/.test(r.stdout + r.stderr), r.stdout + r.stderr);
+
+  // (2) Kit clone thẳng từ Bitbucket: origin ĐÃ trỏ đúng địa chỉ (kể cả có tên đăng nhập trong URL / đuôi .git khác) ⇒ dùng origin, không thêm remote trùng
+  x = dungKit('kit-origin-la-bitbucket', {});
+  git(x.k, 'remote', 'set-url', 'origin', 'https://nguyen.van@git-sds.example.invalid:7990/scm/aut/automation-testing-ai');
+  r = chayDB(x.k, x.s, 'trang-thai');
+  ca('origin đã trỏ Bitbucket (khác cách viết URL) ⇒ dùng origin, báo "Kho nhận bài: origin"', /Kho nhận bài\s*: origin/.test(r.stdout), r.stdout + r.stderr);
+  r = chayDB(x.k, x.s, 'cap-nhat');
+  ca('...và KHÔNG thêm remote "bitbucket" trùng lặp', dsRemote(x.k).length === 1, dsRemote(x.k).join('|'));
+
+  // (3) remote "bitbucket" có sẵn nhưng trỏ chỗ khác: máy tester đổi theo cấu hình; máy phụ trách chỉ cảnh báo
+  x = dungKit('kit-sai-dia-chi-tester', {}); git(x.k, 'remote', 'add', 'bitbucket', remote);
+  r = chayDB(x.k, x.s, 'cap-nhat');
+  ca('tester: remote "bitbucket" trỏ sai ⇒ đổi sang địa chỉ trong cấu hình', gitOk(x.k, 'remote', 'get-url', 'bitbucket').stdout.trim() === URL_BB && /đã đổi sang/.test(r.stdout), r.stdout + r.stderr);
+  x = dungKit('kit-sai-dia-chi-phutrach', {}); git(x.k, 'remote', 'add', 'bitbucket', remote);
+  r = chayDB(x.k, x.s, 'cap-nhat', [], { EP_DONG_BO_VAI_TRO: 'phu-trach' });
+  ca('phu-trach: remote trỏ chỗ khác ⇒ KHÔNG tự đổi, chỉ cảnh báo', gitOk(x.k, 'remote', 'get-url', 'bitbucket').stdout.trim() === remote && /KHÔNG tự đổi/.test(r.stdout), r.stdout + r.stderr);
+
+  // (4) remoteUrl không an toàn / sai dạng ⇒ bỏ qua, không thêm gì
+  for (const [ten, u] of [['http thường', 'http://git-sds.example.invalid/scm/a/b.git'], ['đường dẫn tệp', remote.replace(/\\/g, '/')], ['ssh', 'ssh://git@host/a/b.git'], ['có khoảng trắng / ký tự lạ', 'https://host/a b;rm -rf']]) {
+    x = dungKit('kit-url-xau-' + ten.length, { remoteUrl: u });
+    r = chayDB(x.k, x.s, 'cap-nhat');
+    ca('remoteUrl "' + ten + '" bị bỏ qua: không thêm remote, có cảnh báo', dsRemote(x.k).length === 1 && /không hợp lệ/.test(r.stdout), dsRemote(x.k).join('|') + ' ' + r.stdout);
+  }
+
+  // (5) Không khai remoteUrl ⇒ hành vi cũ: thiếu remote vẫn mã 13 (không tự thêm)
+  x = dungKit('kit-khong-remoteurl', { remoteUrl: '' });
+  r = chayDB(x.k, x.s, 'cap-nhat');
+  ca('không có remoteUrl: giữ hành vi cũ (mã 13, không tự thêm remote)', r.status === 13 && dsRemote(x.k).length === 1, r.status + ' ' + r.stdout);
+}
 
 console.log(`\n${dung}/${dung + sai} ca đúng`);
 try { fs.rmSync(goc, { recursive: true, force: true }); } catch (e) { /* Windows có thể giữ tệp .git tạm */ }

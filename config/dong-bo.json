@@ -2,6 +2,7 @@
   "_ghiChu": "Cấu hình đồng bộ kit (tools/tester/dong-bo.js, tools/ci/nhan-bai-hoc.js). Chỉ người phụ trách sửa. Thêm / nới giá trị = nới cổng an toàn ⇒ hook hỏi.",
   "nhanhChinh": "main",
   "remote": "bitbucket",
+  "remoteUrl": "https://git-sds.softdreams.vn:7990/scm/aut/automation-testing-ai.git",
   "kenhGui": "main-truc-tiep",
   "tienToHopThu": "inbox",
   "tuoiToiDaPhut": 30,

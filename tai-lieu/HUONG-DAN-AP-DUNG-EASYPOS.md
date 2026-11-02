@@ -603,6 +603,29 @@ Khi pilot ổn 1–2 tuần: push `bat:true` cho tất cả; sau khi mọi ngư�
 6. Kết quả do mô hình sinh có thể sai — tester kiểm chứng bằng thao tác thật (đã ghi "bản mã" repo@commit để truy vết).
 7. Chưa kiểm chứng trên Claude Code thật: tên cờ / cài đặt (`--bare`, `blockReadsOutsideWorkingDirectories`; nối MCP dùng cầu nối stdio cục bộ nên không phụ thuộc `headersHelper`) lấy từ tài liệu; **Bước 8 bắt buộc chạy thử**, gồm yêu cầu worker đọc `/etc/hostname` và `/proc/self/environ` trong container (phải bị từ chối / không thấy).
 
+### D16. Kho kit là BITBUCKET (không dùng GitHub nữa): bài học tự lên `main` của Bitbucket (02/11/2026)
+
+**Tình trạng:** kit nằm ở `https://git-sds.softdreams.vn:7990/scm/aut/automation-testing-ai.git` (nhánh `main`). Cấu hình `config/dong-bo.json` đã khai `remote: bitbucket`, `kenhGui: main-truc-tiep` ⇒ tester gửi bài học **thẳng lên `main` của Bitbucket** (không qua `inbox/`, không cần máy chủ nhận bài).
+
+**Hai chỗ khiến "hình như vẫn lên GitHub" (đã xử lý):**
+1. **Thông báo đỏ "Nhan bai hoc tu tester workflow failed" là của GitHub Actions, không phải bài học tester gửi.** Workflow `nhan-bai-hoc.yml` còn nằm trên GitHub, chạy mỗi 10 phút và **luôn lỗi** vì cấu hình mới trỏ remote `bitbucket` mà runner GitHub không có. Đã xoá `.github/workflows/nhan-bai-hoc.yml` khỏi kit (commit + push; sau khi GitHub `main` mất tệp này, workflow tự dừng). **Làm ngay cho chắc:** GitHub → repo → *Actions* → *Nhan bai hoc tu tester* → `⋯` → **Disable workflow**. Kiểm chứng: `git ls-remote --heads origin` trên GitHub **không có nhánh `inbox/*` nào** ⇒ không tester nào đang gửi bài lên GitHub.
+2. **Máy tester đã cài từ GitHub chỉ có remote `origin` (= GitHub)**; cấu hình mới đòi remote tên `bitbucket` nên `dong-bo.js` báo "Kit chưa có remote bitbucket" (mã 13) — **không kéo được bản mới, không gửi được bài**. Đã sửa: `config/dong-bo.json` có thêm `remoteUrl` (địa chỉ Bitbucket); `dong-bo.js` **tự dùng remote đang trỏ đúng địa chỉ đó (dù tên gì), hoặc tự thêm remote `bitbucket`**, tự đổi nếu remote đang trỏ sai (chỉ máy tester; máy phụ trách chỉ cảnh báo). Chỉ nhận địa chỉ `https://`.
+
+**Cầu nối cho máy tester cũ — làm ĐÚNG thứ tự:**
+- Máy tester đang ở bản cũ vẫn kéo kit từ **GitHub** `main`. Vì vậy commit này phải được đẩy lên **cả Bitbucket lẫn GitHub** MỘT lần: `git push bitbucket main` và `git push origin main`. Khi tester mở phiên Claude kế tiếp, kit tự cập nhật, `dong-bo.js` mới tự nối Bitbucket; từ đó mọi cập nhật / bài học đi qua Bitbucket. Khi cả nhóm đã nối (kiểm: `dong-bo.js trang-thai` ở máy tester ra `Kho nhận bài: bitbucket (Bitbucket)`), **ngừng đẩy lên GitHub** và có thể đặt repo GitHub ở chế độ lưu trữ.
+- **Máy tester đã kẹt mã 13** (đã kéo bản cấu hình mới mà chưa có remote — không tự cứu được vì không kéo được bản sửa): chạy **MỘT lần** trong thư mục kit (cmd), rồi đăng nhập Bitbucket khi hỏi:
+  ```
+  git remote add bitbucket https://git-sds.softdreams.vn:7990/scm/aut/automation-testing-ai.git
+  git fetch bitbucket
+  ```
+  Sau đó mở phiên Claude mới là kit tự cập nhật.
+
+**Điều kiện bắt buộc ở Bitbucket (admin làm một lần):**
+- Mỗi tester có tài khoản Bitbucket với quyền **ĐỌC** repo `AUT/automation-testing-ai` và quyền **GHI vào `main`** (kênh `main-truc-tiep` đẩy thẳng `main`; không có quyền ghi thì bài kẹt trong hộp thư với thông báo "chưa có quyền ghi nhánh main"). Tester đăng nhập Bitbucket **một lần** bằng Git (hộp thoại Git Credential Manager).
+- Đây là quyền trên **repo của KIT**, không phải quyền đọc mã nguồn EPOS; không mâu thuẫn với mục tiêu Code-Insight.
+
+**Đánh đổi bảo mật cần biết:** `main-truc-tiep` cho phép tester ghi `main` ⇒ về nguyên tắc một tester xấu có thể đẩy một commit sửa `hooks/` / `tools/` và mọi máy sẽ kéo về. Giảm nhẹ hiện có: `dong-bo.js` ở máy tester **từ chối** (mã 12) commit của tài khoản bot chạm ngoài `kien-thuc/`, hook chặn Claude sửa các tệp đó, mọi commit đều thấy trên Bitbucket (xem `git log` / lịch sử). **Cách chặt hơn (khuyến nghị khi nhóm tester lớn):** đặt `kenhGui: "inbox"` (tester chỉ đẩy nhánh `inbox/*`; trong Bitbucket đặt *Branch permissions*: `main` chỉ người phụ trách + tài khoản bot được ghi, `inbox/*` ai cũng ghi), rồi tạo một **job Jenkins** chạy mỗi 10 phút trên bản clone `main` bằng tài khoản bot: `node tools/ci/nhan-bai-hoc.js hop-nhat` (script này kiểm lại từng bài rồi tự gộp vào `main`, đúng như bản GitHub Actions trước đây). Cần Node trên máy Jenkins.
+
 ---
 
 ## Phần E. Khi gặp lỗi

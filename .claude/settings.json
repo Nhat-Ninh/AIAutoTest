@@ -1,0 +1,28 @@
+{
+  "env": {
+    "EP_KIT": "C:/easypos-tester-kit"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Edit|Write|MultiEdit|NotebookEdit|Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/easypos-tester-kit/hooks/guard-easypos.js\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/easypos-tester-kit/hooks/session-rules.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

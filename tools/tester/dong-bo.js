@@ -33,7 +33,7 @@ const F_CHAY = path.join(STATE, 'chay-test.lock');
 const HOP_THU = path.join(STATE, 'bai-hoc-cho-gui');
 const DA_GUI = path.join(STATE, 'bai-hoc-da-gui');
 
-const MAC_DINH = { nhanhChinh: 'main', remote: 'origin', tienToHopThu: 'inbox', kenhGui: 'inbox', tuoiToiDaPhut: 30, choPhepNgoaiTuyenNgay: 3, timeoutFetchGiay: 25, timeoutGuiGiay: 60,
+const MAC_DINH = { nhanhChinh: 'main', remote: 'origin', remoteUrl: '', tienToHopThu: 'inbox', kenhGui: 'inbox', tuoiToiDaPhut: 30, choPhepNgoaiTuyenNgay: 3, timeoutFetchGiay: 25, timeoutGuiGiay: 60,
   toiDaCommitMoiLanKeo: 300, toiDaBaiMoiLanGui: 20, botEmail: 'easypos-kit-bot@users.noreply.github.com', botTen: 'easypos-kit-bot', duongNhayCam: [], duongBaiHoc: 'kien-thuc/bai/' };
 let CFG = MAC_DINH;
 try { CFG = Object.assign({}, MAC_DINH, JSON.parse(fs.readFileSync(path.join(KIT, 'config', 'dong-bo.json'), 'utf8'))); } catch (e) { /* dùng mặc định */ }
@@ -57,6 +57,32 @@ function vaiTro() {
 }
 // Vai trò phu-trach THẮNG mọi cờ: người phụ trách bấm nhầm CAP-NHAT.cmd cũng không mất công việc dở.
 const DUOC_GHI_DE = () => vaiTro() === 'tester' || (args.includes('--chap-nhan-sao-luu') && vaiTro() !== 'phu-trach');
+
+/* ---------- địa chỉ kho (remote) ----------
+ * Máy tester có thể được cài từ GitHub (origin = GitHub) hoặc clone từ Bitbucket (origin = Bitbucket); tên remote trong cấu hình ("bitbucket") có thể CHƯA CÓ trên máy đó
+ * ⇒ trước đây dong-bo báo "chưa có remote" (mã 13) và bài học không bao giờ lên được kho. Nay cấu hình khai remoteUrl (https://…):
+ *   1. đã có remote nào TRỎ ĐÚNG địa chỉ đó (dù tên gì, vd origin) ⇒ dùng remote đó;
+ *   2. chưa có remote tên cấu hình ⇒ tự THÊM (git remote add);
+ *   3. remote tên cấu hình đang trỏ chỗ khác ⇒ máy tester: đổi địa chỉ; máy phụ trách: chỉ cảnh báo (không đụng).
+ * Chỉ nhận địa chỉ https (cấu hình đến từ main đã được người phụ trách duyệt). Không có remoteUrl ⇒ hành vi cũ. */
+const chuanUrl = (u) => String(u || '').trim().replace(/^(https?:\/\/)[^@/]*@/i, '$1').replace(/\.git$/i, '').replace(/\/+$/, '').toLowerCase();
+function damBaoRemote(chiTim) {
+  const url = String(CFG.remoteUrl || '').trim();
+  if (!url) return;
+  if (!/^https:\/\/[A-Za-z0-9.-]+(:\d+)?\/[\w./~-]+$/.test(url)) { if (!chiTim) canh('config/dong-bo.json: remoteUrl không hợp lệ (chỉ nhận https://…) — bỏ qua.'); return; }
+  const ds = G(['remote', '-v']).out.split('\n').map(l => l.match(/^(\S+)\s+(\S+) \(fetch\)$/)).filter(Boolean).map(m => ({ ten: m[1], url: m[2] }));
+  const khop = ds.find(d => chuanUrl(d.url) === chuanUrl(url));
+  if (khop) { CFG.remote = khop.ten; return; }
+  if (chiTim) return;
+  if (!ds.some(d => d.ten === CFG.remote)) {
+    const r = G(['remote', 'add', CFG.remote, url]);
+    if (r.ok) canh('Kit chưa có remote "' + CFG.remote + '" — đã tự thêm trỏ ' + url + '.'); else loiIn('Không thêm được remote "' + CFG.remote + '": ' + r.err.split('\n')[0]);
+    return;
+  }
+  if (DUOC_GHI_DE()) { const r = G(['remote', 'set-url', CFG.remote, url]); if (r.ok) canh('Remote "' + CFG.remote + '" đang trỏ chỗ khác — đã đổi sang ' + url + ' theo config/dong-bo.json.'); }
+  else canh('Remote "' + CFG.remote + '" không trỏ ' + url + ' (cấu hình mong muốn) — máy này không phải máy tester nên KHÔNG tự đổi.');
+}
+function tenKho() { const u = G(['remote', 'get-url', CFG.remote]).out; return /github\.com/i.test(u) ? 'GitHub' : /git-sds|bitbucket/i.test(u) ? 'Bitbucket' : 'kho git'; }
 
 /* ---------- trạng thái ---------- */
 function docTT() { try { return JSON.parse(fs.readFileSync(F_TT, 'utf8')); } catch (e) { return {}; } }
@@ -194,6 +220,7 @@ function capNhat() {
   const kho = kieuKho();
   if (kho.kieu === 'khong-phai-git') { canh('Kit KHÔNG phải bản clone git (cài từ zip?) nên KHÔNG tự cập nhật. Muốn có bản mới: tải zip mới rồi bấm CAI-DAT.cmd (báo cáo của bạn được giữ nguyên), hoặc nhờ người phụ trách cài lại bằng git clone.'); return 0; }
   if (kho.kieu === 'loi-git') return ngoaiTuyen(tt, { err: kho.err, status: 0 });   // CÓ .git mà git lỗi: không được âm thầm tắt cổng — áp dụng hạn ngoại tuyến
+  damBaoRemote();
   const remote = CFG.remote, nhanh = CFG.nhanhChinh, remoteRef = `refs/remotes/${remote}/${nhanh}`;
   if (!G(['remote', 'get-url', remote]).ok) { canh(`Kit chưa có remote "${remote}" — không đồng bộ được.`); return 13; }
   if (dangChayTest()) { in_('Đang có một lượt chạy test — không cập nhật giữa chừng.'); return 0; }
@@ -283,7 +310,7 @@ function ngoaiTuyen(tt, f) {
   const khongCoGit = /ENOENT|not recognized|not found/i.test(f.err) && !f.status;
   const goiY = sohuu ? ' (Git từ chối vì thư mục kit thuộc tài khoản Windows khác: chạy MỘT lần `git config --global --add safe.directory "' + KIT.replace(/\\/g, '/') + '"`)'
     : khongCoGit ? ' (không tìm thấy lệnh git: cài Git for Windows rồi mở cửa sổ mới)'
-    : xacThuc ? ' (có vẻ chưa đăng nhập GitHub: chạy MỘT lần `git fetch` trong thư mục kit để Git nhớ tài khoản)' : ' (kiểm mạng / VPN)';
+    : xacThuc ? ' (có vẻ chưa đăng nhập ' + tenKho() + ': chạy MỘT lần `git fetch ' + CFG.remote + '` trong thư mục kit để Git nhớ tài khoản)' : ' (kiểm mạng / VPN)';
   // Lần sau (trong vài phút) không thử lại ngay: tránh mỗi lệnh chạy test lại chờ hết hạn fetch (~25 giây) khi đang mất mạng.
   if (tuoi <= CFG.choPhepNgoaiTuyenNgay) tt.thuLaiSau = Date.now() + 10 * 60000, ghiTT(tt);
   if (tuoi <= CFG.choPhepNgoaiTuyenNgay) { canh('Không kéo được bản mới của kit' + goiY + ' — dùng bản đã có (lần cập nhật cuối ' + (tuoi < 1 ? Math.round(tuoi * 24) + ' giờ' : tuoi.toFixed(1) + ' ngày') + ' trước, cho phép tối đa ' + CFG.choPhepNgoaiTuyenNgay + ' ngày).'); return 0; }
@@ -334,6 +361,7 @@ function gui() {
   for (const b of hopLe) console.log('  + ' + b.id);
   if (xem) { console.log('(--xem: chưa gửi gì)'); return 0; }
 
+  damBaoRemote();
   const url = G(['remote', 'get-url', CFG.remote]).out;
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ep-gui-bai-'));
   const T = (a, o) => git(a, Object.assign({ cwd: tmp }, o || {}));
@@ -400,6 +428,7 @@ function ngoaiTuyenGui(r) {
 
 function trangThai() {
   const tt = docTT();
+  if (laBanClone()) damBaoRemote(true);
   console.log('Thư mục kit : ' + KIT);
   console.log('Vai trò máy : ' + (vaiTro() || 'chưa đặt (an toàn: không tự ghi đè)'));
   console.log('Là bản clone: ' + (laBanClone() ? 'có' : 'KHÔNG (cài từ zip?)'));
@@ -412,11 +441,12 @@ function trangThai() {
   console.log('Cập nhật cuối: ' + (tt.thanhCongLuc ? new Date(tt.thanhCongLuc).toLocaleString('sv-SE') + ' (' + Math.round((Date.now() - tt.thanhCongLuc) / 60000) + ' phút trước)' : 'chưa lần nào'));
   if (tt.canXuLy && tt.canXuLy.length) console.log('CẦN LÀM NỐT   : ' + tt.canXuLy.join(', ') + '  → node tools/tester/dong-bo.js cap-nhat');
   const cho = fs.existsSync(HOP_THU) ? fs.readdirSync(HOP_THU).filter(f => f.endsWith('.md')).length : 0;
+  console.log('Kho nhận bài   : ' + CFG.remote + ' (' + tenKho() + ') · nhánh ' + CFG.nhanhChinh + ' · kênh gửi: ' + CFG.kenhGui);
   console.log('Hộp thư bài học chờ gửi: ' + cho + (cho ? '  → node tools/tester/dong-bo.js gui' : ''));
   // Bài đã gửi lâu mà vẫn chưa về tới kho ⇒ có thể máy chủ đã loại (nhánh inbox-loi/…): không để bài mất âm thầm.
   let quaHan = 0;
   try { for (const f of fs.readdirSync(DA_GUI)) if (Date.now() - fs.statSync(path.join(DA_GUI, f)).mtimeMs > 2 * 86400000) quaHan++; } catch (e) { /* chưa có thư mục */ }
-  console.log('Bài đã gửi nhưng chưa thấy trong main sau 2 ngày: ' + quaHan + (quaHan ? '  → có thể bị máy chủ loại (xem nhánh inbox-loi/ trên GitHub): báo người phụ trách' : ''));
+  console.log('Bài đã gửi nhưng chưa thấy trong main sau 2 ngày: ' + quaHan + (quaHan ? '  → có thể bị máy chủ loại (xem nhánh inbox-loi/ trên ' + tenKho() + '): báo người phụ trách' : ''));
   return 0;
 }
 
